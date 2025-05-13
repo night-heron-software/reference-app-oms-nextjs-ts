@@ -1,0 +1,212 @@
+#+TITLE:  Tempororal OMS Reference App Typescript
+#+AUTHOR: Jeff Romine
+#+EMAIL:  jromineut@gmail.com
+#+DATE:   2025-05-10 Sat
+#+DESCRIPTION:
+#+KEYWORDS:
+#+LANGUAGE:  en
+#+OPTIONS:   H:3 num:t toc:t \n:nil @:t ::t |:t ^:t -:t f:t *:t <:t
+#+OPTIONS:   TeX:t LaTeX:t skip:nil d:nil todo:t pri:nil tags:not-in-toc
+#+OPTIONS: ^:{} author:nil email:nil creator:nil timestamp:nil
+#+INFOJS_OPT: view:nil toc:nil ltoc:t mouse:underline buttons:0 path:http://orgmode.org/org-info.js
+#+EXPORT_SELECT_TAGS: export
+#+EXPORT_EXCLUDE_TAGS: noexport
+#+LINK_UP:
+#+LINK_HOME:
+#+XSLT:
+#+STARTUP: showeverything
+
+
+* Steps
+
+** [[https://learn.temporal.io/getting_started/typescript/dev_environment/][Set up a local development environment for Temporal and TypeScript]]
+
+** [[https://learn.temporal.io/tutorials/typescript/build-one-click-order-app-nextjs/][Build a one-click-order application with TypeScript and Next.js]]
+
+*** Create Next.js project
+
+#+begin_src shell-script
+npx create-next-app@latest reference-app-oms-nextjs-ts
+#+end_src
+
+*** Install Packages and configure
+
+**** Node tsconfig
+
+#+begin_src shell-script
+npm install --save-dev @tsconfig/node20
+#+end_src
+
+**** nodemon
+
+#+begin_src shell-script
+npm install --save-dev nodemon
+#+end_src
+
+**** temporal packaes
+
+#+begin_src shell-script
+npm install @temporalio/client @temporalio/worker @temporalio/workflow @temporalio/activity
+#+end_src
+
+**** temporal/tsconfig.json
+
+#+begin_src json
+{
+  "extends": "@tsconfig/node20/tsconfig.json",
+  "version": "4.4.2",
+  "compilerOptions": {
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "rootDir": "./src",
+    "outDir": "./lib"
+  },
+  "include": ["src/**/*.ts"]
+}
+#+end_src
+
+
+**** npm-run-all
+
+#+begin_src shell-script
+npm install npm-run-all --save-dev
+#+end_src
+
+**** Add scripts to package.json
+
+***** Initial tsconfig.json
+
+#+begin_src json
+{
+  "name": "reference-app-oms-nextjs-ts",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "next": "15.3.2",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "^3",
+    "@tailwindcss/postcss": "^4",
+    "@tsconfig/node20": "^20.1.5",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "15.3.2",
+    "nodemon": "^3.1.10",
+    "npm-run-all": "^4.1.5",
+    "tailwindcss": "^4",
+    "typescript": "^5"
+  }
+}
+#+end_src
+
+***** Updated package.json
+
+#+begin_src json
+{
+  "name": "reference-app-oms-nextjs-ts",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "npm-run-all -l build:temporal --parallel dev:temporal dev:next start:worker",
+    "dev:next": "next dev",
+    "dev:temporal": "tsc --build --watch ./temporal/tsconfig.json",
+    "build:next": "next build",
+    "build:temporal": "tsc --build ./temporal/tsconfig.json",
+    "start:worker": "nodemon ./temporal/lib/worker",
+    "start": "next start",
+    "lint": "eslint ."
+  },
+  "dependencies": {
+    "next": "15.3.2",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "^3",
+    "@tailwindcss/postcss": "^4",
+    "@tsconfig/node20": "^20.1.5",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "15.3.2",
+    "nodemon": "^3.1.10",
+    "npm-run-all": "^4.1.5",
+    "tailwindcss": "^4",
+    "typescript": "^5"
+  }
+}
+
+#+end_src
+
+* [[https://learn.temporal.io/tutorials/typescript/build-one-click-order-app-nextjs/#define-the-business-logic-using-temporal][Define the business logic using Temporal]]
+
+** temporal/src/activities.ts
+
+#+begin_src javascript
+import { activityInfo } from '@temporalio/activity';
+export async function purchase(id: string): Promise<string> {
+  console.log(`Purchased ${id}!`);
+  return activityInfo().activityId;
+}
+#+end_src
+
+
+** temporaal/src/workflows.ts
+
+#+begin_src javascript
+import { proxyActivities, sleep } from '@temporalio/workflow';
+import type * as activities from './activities';
+
+const { purchase } = proxyActivities<typeof activities>({
+  startToCloseTimeout: '1 minute',
+});
+
+export async function oneClickBuy(id: string): Promise<string> {
+  const result = await purchase(id); // calling the activity
+  await sleep('10 seconds'); // sleep to simulate a longer response.
+  console.log(`Activity ID: ${result} executed!`);
+  return result;
+}
+#+end_src
+
+** Define the back-end API
+
+*** temporal/src/client.ts
+#+begin_src javascript
+import { Client, Connection } from '@temporalio/client';
+
+const client: Client = makeClient();
+
+function makeClient(): Client {
+  const connection = Connection.lazy({
+    address: 'localhost:7233',
+    // In production, pass options to configure TLS and other settings.
+  });
+  return new Client({ connection });
+}
+
+export function getTemporalClient(): Client {
+  return client;
+}
+#+end_src
+
+#+begin_src shell-script
+mkdir -p app/api/startBuy
+#+end_src
+
+#+begin_src shell-script
+mkdir -p app/api/startBuy
+touch app/api/startBuy/route.ts
+#+end_src
