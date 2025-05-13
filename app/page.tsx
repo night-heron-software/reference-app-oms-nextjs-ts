@@ -1,103 +1,117 @@
-import Image from "next/image";
+'use client'
+import Head from 'next/head';
+import React, { useState, useRef } from 'react';
+import { v4 as uuid4 } from 'uuid';
 
-export default function Home() {
+
+interface ProductProps {
+  product: {
+    id: number;
+    name: string;
+    price: string;
+  };
+}
+
+const products = [
+  {
+    id: 1,
+    name: 'PDF Book',
+    price: '$49',
+  },
+  {
+    id: 2,
+    name: 'Kindle Book',
+    price: '$49',
+  },
+];
+
+type ITEMSTATE = 'NEW' | 'ORDERING' |  'ORDERED' | 'ERROR';
+
+const Product: React.FC<ProductProps> = ({ product }) => {
+  const itemId = product.id;
+  const [state, setState] = useState<ITEMSTATE>('NEW');
+  const [transactionId, setTransactionId] = React.useState(uuid4());
+
+  const buyProduct = () => {
+    setState('ORDERING');
+    fetch('/api/startBuy', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ itemId, transactionId }),
+    })
+      .then(() => {
+        setState('ORDERED');
+      })
+      .catch(() => {
+        setState('ERROR');
+      });
+  };
+
+  const buyStyle = "w-full bg-white hover:bg-blue-200 bg-opacity-75 backdrop-filter backdrop-blur py-2 px-4 rounded-md text-sm font-medium text-gray-900 text-center";
+  const orderingStyle = "w-full bg-yellow-500 bg-opacity-75 backdrop-filter backdrop-blur py-2 px-4 rounded-md text-sm font-medium text-gray-900 text-center";
+  const orderStyle = "w-full bg-green-500 bg-opacity-75 backdrop-filter backdrop-blur py-2 px-4 rounded-md text-sm font-medium text-gray-900 text-center";
+  const errorStyle = "w-full bg-white hover:bg-blue-200 bg-opacity-75 backdrop-filter backdrop-blur py-2 px-4 rounded-md text-sm font-medium text-gray-900 text-center";
+
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
-
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+    <div key={product.id} className="relative group">
+      <div className="mt-4 flex items-center justify-between text-base font-medium text-gray-900 space-x-8">
+        <h3>{product.name}</h3>
+        <p>{product.price}</p>
+      </div>
+      <div className="aspect-w-4 aspect-h-3 rounded-lg overflow-hidden bg-gray-100">
+        <div className="flex items-end p-4" aria-hidden="true">
+          {
+            {
+              NEW:     ( <button onClick={buyProduct} className={buyStyle}> Buy Now </button> ),
+              ORDERING: ( <div className={orderingStyle}>Orderering</div> ),
+              ORDERED: ( <div className={orderStyle}>Ordered</div> ),
+              ERROR:   ( <button onClick={buyProduct} className={errorStyle}>Error! Click to Retry </button> ),
+            }[state]
+          }
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+      </div>
     </div>
   );
-}
+};
+
+const ProductList: React.FC = () => {
+  return (
+    <div className="bg-white">
+      <div className="max-w-2xl mx-auto py-16 px-4 sm:py-24 sm:px-6 lg:max-w-7xl lg:px-8">
+        <div className="mt-6 grid grid-cols-1 gap-x-8 gap-y-8 sm:grid-cols-2 sm:gap-y-10 md:grid-cols-4">
+          {products.map((product) => (
+            <Product product={product} key={product.id} />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const Home: React.FC = () => {
+  return (
+    <div className="pt-8 pb-80 sm:pt-12 sm:pb-40 lg:pt-24 lg:pb-48">
+      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 sm:static">
+        <Head>
+          <title>Temporal + Next.js One-Click Purchase</title>
+          <link rel="icon" href="/favicon.ico" />
+        </Head>
+        <header className="relative overflow-hidden">
+          <div className="sm:max-w-lg">
+            <h1 className="text-4xl font font-extrabold tracking-tight text-gray-900 sm:text-6xl">
+              Temporal.io + Next.js One Click Purchase
+            </h1>
+            <p className="mt-4 text-xl text-gray-500">
+              Click on the item to buy it now.
+            </p>
+          </div>
+        </header>
+        <ProductList />
+      </div>
+    </div>
+  );
+};
+
+export default Home;

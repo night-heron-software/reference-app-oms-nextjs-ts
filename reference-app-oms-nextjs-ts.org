@@ -210,3 +210,9 @@ mkdir -p app/api/startBuy
 mkdir -p app/api/startBuy
 touch app/api/startBuy/route.ts
 #+end_src
+
+#+begin_src shell-script
+curl -d '{"itemId":"1", "transactionId":"abc124"}' \
+     -H "Content-Type: application/json" \
+     -X POST http://localhost:3000/api/startBuy
+#+end_src
