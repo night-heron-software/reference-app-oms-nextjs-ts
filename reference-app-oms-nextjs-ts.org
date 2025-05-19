@@ -16,40 +16,43 @@
 #+XSLT:
 #+STARTUP: showeverything
 
+* [[https://learn.temporal.io/getting_started/typescript/dev_environment/][Set up a local development environment for Temporal and TypeScript]]
 
-* Steps
+* [[https://learn.temporal.io/getting_started/typescript/hello_world_in_typescript/][Build a Temporal Application from scratch in TypeScript]]
 
-** [[https://learn.temporal.io/getting_started/typescript/dev_environment/][Set up a local development environment for Temporal and TypeScript]]
+* [[https://learn.temporal.io/tutorials/typescript/build-one-click-order-app-nextjs/][Build a one-click-order application with TypeScript and Next.js]]
 
-** [[https://learn.temporal.io/tutorials/typescript/build-one-click-order-app-nextjs/][Build a one-click-order application with TypeScript and Next.js]]
-
-*** Create Next.js project
+** Create Next.js project
 
 #+begin_src shell-script
 npx create-next-app@latest reference-app-oms-nextjs-ts
 #+end_src
 
-*** Install Packages and configure
-
-**** Node tsconfig
+** Node tsconfig
 
 #+begin_src shell-script
 npm install --save-dev @tsconfig/node20
 #+end_src
 
-**** nodemon
+** nodemon - for watching for file changes
 
 #+begin_src shell-script
 npm install --save-dev nodemon
 #+end_src
 
-**** temporal packaes
+** temporal packages
 
 #+begin_src shell-script
 npm install @temporalio/client @temporalio/worker @temporalio/workflow @temporalio/activity
 #+end_src
 
-**** temporal/tsconfig.json
+** temporal directory
+
+#+begin_src shell-script
+mkdir -p temporal/src
+#+end_src
+
+** temporal/tsconfig.json
 
 #+begin_src json
 {
@@ -67,15 +70,14 @@ npm install @temporalio/client @temporalio/worker @temporalio/workflow @temporal
 #+end_src
 
 
-**** npm-run-all
+** npm-run-all
 
 #+begin_src shell-script
 npm install npm-run-all --save-dev
 #+end_src
 
-**** Add scripts to package.json
 
-***** Initial tsconfig.json
+** Initial package.json
 
 #+begin_src json
 {
@@ -110,7 +112,7 @@ npm install npm-run-all --save-dev
 }
 #+end_src
 
-***** Updated package.json
+**** Updated package.json
 
 #+begin_src json
 {
@@ -154,7 +156,7 @@ npm install npm-run-all --save-dev
 
 ** temporal/src/activities.ts
 
-#+begin_src javascript
+#+begin_src typescript
 import { activityInfo } from '@temporalio/activity';
 export async function purchase(id: string): Promise<string> {
   console.log(`Purchased ${id}!`);
@@ -163,9 +165,9 @@ export async function purchase(id: string): Promise<string> {
 #+end_src
 
 
-** temporaal/src/workflows.ts
+** temporal/src/workflows.ts
 
-#+begin_src javascript
+#+begin_src typescript
 import { proxyActivities, sleep } from '@temporalio/workflow';
 import type * as activities from './activities';
 
@@ -181,10 +183,59 @@ export async function oneClickBuy(id: string): Promise<string> {
 }
 #+end_src
 
-** Define the back-end API
+#+begin_quote
+Workflows must be deterministic, so you perform non-deterministic work
+in Activities. The TypeScript SDK bundles Workflow code and runs it
+inside a deterministic sandbox. This sandbox can help detect if you're
+using nondeterministic code. This is why you must separate Workflow
+code from Activity code, and why you have to use the proxyActivities
+function to load your Activity functions instead of directly importing
+them. The Activities will be nondeterministic, so you can't run in the
+same sandbox as the Workflow code.
+#+end_quote
 
-*** temporal/src/client.ts
-#+begin_src javascript
+** temporal/src/shared.ts
+
+#+begin_src typescript
+export const TASK_QUEUE_NAME = 'ecommerce-oneclick';
+#+end_src
+
+** temporal/src/worker.ts
+
+#+begin_src typescript
+import { NativeConnection, Worker } from '@temporalio/worker';
+import * as activities from './activities';
+import { TASK_QUEUE_NAME } from './shared';
+
+run().catch((err) => console.log(err));
+
+async function run() {
+  const connection = await NativeConnection.connect({
+    address: 'localhost:7233',
+    // In production, pass options to configure TLS and other settings.
+  });
+  try {
+    const worker = await Worker.create({
+      connection,
+      workflowsPath: require.resolve('./workflows'),
+      activities,
+      taskQueue: TASK_QUEUE_NAME
+    });
+    await worker.run();
+  } finally {
+    connection.close();
+  }
+}
+#+end_src
+
+*** check that worker builds and runs
+
+#+begin_src shell-script
+npm run build:temporal && npm run start:worker`
+#+end_src
+
+** temporal/src/client.ts
+#+begin_src typescript
 import { Client, Connection } from '@temporalio/client';
 
 const client: Client = makeClient();
