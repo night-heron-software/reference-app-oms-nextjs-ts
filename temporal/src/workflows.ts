@@ -1,5 +1,5 @@
 import { proxyActivities, sleep } from '@temporalio/workflow';
-import type * as activities from './activities';
+import type * as activities from './activities.ts';
 
 const { purchase } = proxyActivities<typeof activities>({
   startToCloseTimeout: '1 minute',

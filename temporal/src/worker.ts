@@ -1,6 +1,8 @@
 import { NativeConnection, Worker } from '@temporalio/worker';
-import * as activities from './activities';
-import { TASK_QUEUE_NAME } from './shared';
+import * as activities from './activities.js';
+import { TASK_QUEUE_NAME } from './shared.js';
+import { createRequire } from 'node:module';
+const require = createRequire(import.meta.url);
 
 run().catch((err) => console.log(err));
 

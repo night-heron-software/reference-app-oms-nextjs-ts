@@ -1,7 +1,7 @@
 {
   "extends": "@tsconfig/node20/tsconfig.json",
   "version": "4.4.2",
-  "moduleResolution": "bundler",
+  "type": "nodenext",
   "compilerOptions": {
     "lib": ["es2021"],
     "declaration": true,
