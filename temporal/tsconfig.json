@@ -1,8 +1,8 @@
 {
   "extends": "@tsconfig/node20/tsconfig.json",
   "version": "4.4.2",
-  "type": "nodenext",
   "compilerOptions": {
+    "moduleResolution": "NodeNext",
     "lib": ["es2021"],
     "declaration": true,
     "declarationMap": true,

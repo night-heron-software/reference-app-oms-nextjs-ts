@@ -267,3 +267,12 @@ curl -d '{"itemId":"1", "transactionId":"abc124"}' \
      -H "Content-Type: application/json" \
      -X POST http://localhost:3000/api/startBuy
 #+end_src
+
+* Temporal OMS
+
+** postgres
+
+#+begin_src shell-script
+https://www.npmjs.com/package/@vercel/postgres
+
+#+end_src

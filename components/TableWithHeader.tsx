@@ -32,7 +32,7 @@ const TableWithHeader = <R extends Record<string, any>>({
   const pageData = useMemo(() => {
     const start = (page - 1) * pageSize;
     const end = start + pageSize;
-    return data.slice(start, end);
+    return (data || []).slice(start, end);
   }, [data, page, pageSize]);
 
   const nextPage = () => {
@@ -47,7 +47,7 @@ const TableWithHeader = <R extends Record<string, any>>({
     }
   };
 
-  const totalItems = data.length;
+  const totalItems = (data || []).length;
   const firstItemOnPage = totalItems > 0 ? (page - 1) * pageSize + 1 : 0;
   const lastItemOnPage = Math.min(page * pageSize, totalItems);
 
