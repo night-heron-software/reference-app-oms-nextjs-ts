@@ -21,32 +21,32 @@ export async function fetchOrders(): Promise<Order[]> {
   const result = await sql`SELECT id, status, received_at FROM orders ORDER BY received_at DESC`;
   return result.rows as Order[];
 }
+/* ((formData: FormData) => void | Promise<void>) | undefined */
+export async function createOrder(formData: FormData): Promise<void> {
+  console.log(JSON.stringify(Object.fromEntries(formData.entries()), null, 2));
+  const order = JSON.parse(formData.get('order') as string);
+  console.log(JSON.stringify(order, null, 2));
 
-export async function purchase(order: OrderInput) {
-  const result =
-    await sql`INSERT INTO orders (id, customer_id, status) VALUES (${order.id},${order.customerId},'pending') RETURNING id`;
-  console.log(JSON.stringify(result, null, 2));
+  return new Promise((resolve, reject) => {
+    const orderInput: OrderInput = {
+      id: order.id,
+      customerId: order.customerId,
+      items: order.items
+    };
 
-  if (result.rows.length > 0) {
-    const client = getTemporalClient();
-    const workflowId = 'Order:' + order.id;
-    const handle = await client.workflow.start(processOrder, {
-      workflowId: workflowId,
-      taskQueue: TASK_QUEUE_NAME,
-      args: [order]
-    });
-
-    const workflowResult = await handle.result();
-
-    if (workflowResult) {
-      console.log('Workflow started successfully?', workflowResult);
-      return result.rows[0].id;
-    }
-    console.error('Failed to start workflow: ${workflowId}');
-    return undefined;
-  } else {
-    console.error('Failed to insert order into database');
-    // clean up entry in database?
-    return undefined;
-  }
+    getTemporalClient()
+      .workflow.start(processOrder, {
+        taskQueue: TASK_QUEUE_NAME,
+        workflowId: orderInput.id,
+        args: [orderInput]
+      })
+      .then((result) => {
+        console.log('Workflow started successfully:', result);
+        resolve();
+      })
+      .catch((error) => {
+        console.error('Error starting workflow:', error);
+        reject(error);
+      });
+  });
 }
