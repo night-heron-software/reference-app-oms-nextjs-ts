@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import { fetchOrderById } from '@/actions/actions'; // Adjust the import path as necessary
 
 // Assuming components are converted to React and placed in a components directory
 // You might need to adjust these paths based on your project structure and path aliases
@@ -35,34 +36,13 @@ export default function OrderPage({ params }: OrderPageProps) {
   const [actionLoading, setActionLoading] = useState(false); // For action buttons
   const [pageLoading, setPageLoading] = useState(true); // For initial order load
 
-  const fetchOrder = useCallback(async (orderId: string) => {
-    try {
-      // Replace with your actual API endpoint for fetching an order
-      const response = await fetch(`/api/orders/${orderId}`);
-      if (!response.ok) {
-        // If order not found or other error, set order to null or handle error
-        if (response.status === 404) {
-          setOrder(null);
-        }
-        throw new Error(`Failed to fetch order: ${response.statusText}`);
-      }
-      const orderData: Order = await response.json();
-      setOrder(orderData);
-    } catch (error) {
-      console.error('Error fetching order:', error);
-      setOrder(null); // Set order to null on error to indicate failure
-    } finally {
-      setPageLoading(false);
-    }
-  }, []);
-
   // Initial data fetch
   useEffect(() => {
     if (id) {
       setPageLoading(true);
-      fetchOrder(id);
+      fetchOrderById(id);
     }
-  }, [id, fetchOrder]);
+  }, [id, fetchOrderById]);
 
   // Polling logic for order status
   useEffect(() => {
@@ -74,13 +54,13 @@ export default function OrderPage({ params }: OrderPageProps) {
     if (isFinal) return; // Stop polling if status is final
 
     const interval = setInterval(() => {
-      fetchOrder(id);
+      fetchOrderById(id);
     }, 5000); // Poll every 5 seconds (Svelte original was 500ms)
 
     return () => {
       clearInterval(interval);
     };
-  }, [order, id, fetchOrder, pageLoading]);
+  }, [order, id, fetchOrderById, pageLoading]);
 
   const sendAction = async (action: Action) => {
     setActionLoading(true);
@@ -99,7 +79,7 @@ export default function OrderPage({ params }: OrderPageProps) {
           // Optionally, if /orders page needs server data refresh: router.refresh();
         } else {
           // For other actions, re-fetch the current order's data
-          fetchOrder(id);
+          fetchOrderById(id);
           // Optionally, if this page relies on server data that needs refreshing: router.refresh();
         }
       }, 1000);

@@ -1,4 +1,4 @@
-import { proxyActivities } from '@temporalio/workflow';
+import { defineQuery, proxyActivities, setHandler } from '@temporalio/workflow';
 import type * as activities from './activities.js'; // Ensure this path is correct and the module exists
 import type { ItemInput, OrderInput } from './definitions.js'; // Import Order type
 import { Fulfillment, Order, OrderItem, ReserveItemsResult } from './order.js';
@@ -54,9 +54,12 @@ export async function buildFulfillments(order: OrderInput): Promise<ReserveItems
   return reserveItems({ orderId: order.id, items: orderItems });
 }
 
+export const getOrderStatus = defineQuery<string>('getStatus');
+
 export async function processOrder(input: OrderInput): Promise<Order> {
   const order = setupOrder(input);
   //const wf = Workflow.getExternalWorkflowHandle(order.id);
+  setHandler(getOrderStatus, () => order.status);
 
   console.log(`Order: ${JSON.stringify(order, null, 2)} created!`);
   const reserveItemsResult = await buildFulfillments(input);

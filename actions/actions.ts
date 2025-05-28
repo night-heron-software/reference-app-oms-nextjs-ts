@@ -4,10 +4,11 @@ import 'server-only';
 import { TASK_QUEUE_NAME } from '@/temporal/lib/shared';
 import { getTemporalClient } from '@/temporal/src/client';
 import { Order, Shipment } from '@/temporal/src/order';
-import { processOrder } from '@/temporal/src/workflows';
+import { getOrderStatus, processOrder } from '@/temporal/src/workflows';
 import { sql } from '@vercel/postgres';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
+import { getOrderStatus as getStatus } from '@/temporal/src/workflows';
 
 export async function fetchOrder(id: string): Promise<Order | undefined> {
   const result = await sql`SELECT id, customer_id, status FROM orders WHERE id = ${id}`;
@@ -74,4 +75,13 @@ async function insertOrder(order: Order): Promise<number> {
     throw new Error('Failed to insert order');
   }
   return result.rowCount == null ? 0 : result.rowCount;
+}
+
+export async function fetchOrderById(id: string): Promise<Order | undefined> {
+  const client = getTemporalClient();
+
+  const handle = await client.workflow.getHandle(id);
+  const status = await handle.query(getOrderStatus);
+  console.log(`Order status for ${id}: ${status}`);
+  return undefined;
 }

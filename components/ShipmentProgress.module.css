@@ -1,0 +1,82 @@
+@reference "tailwindcss";
+
+.step {
+  /* Define a local class for your list items */
+  @apply px-4 py-1 text-sm font-bold relative z-1;
+}
+
+.step::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-left: 2px solid black;
+  transform: skew(30deg);
+  z-index: -1;
+}
+
+.step.completed::before {
+  /* Qualify with the local class */
+  @apply bg-green-500;
+}
+
+.step.active::before {
+  animation-name: color;
+  animation-duration: 2s;
+  animation-iteration-count: infinite;
+  animation-direction: alternate-reverse;
+  animation-timing-function: ease;
+}
+
+@keyframes color {
+  from {
+    background-color: lightgoldenrodyellow;
+  }
+  to {
+    background-color: #b9f8cf;
+  }
+}
+
+.step.pending::before {
+  background: lightgoldenrodyellow;
+}
+
+.step.incomplete::before,
+.step.unavailable::before {
+  background: lightgoldenrodyellow;
+}
+
+.step.cancelled::before,
+.step.failed::before {
+  @apply bg-rose-400;
+}
+
+/* For pseudo-classes like :first-child, apply them to your local class */
+.step:first-child {
+  /* extend the first item leftward to fill the rest of the space */
+  margin-left: -4rem;
+  padding-left: 4rem;
+}
+
+.step:last-child {
+  /* extend the last item rightward to fill the rest of the space */
+  margin-right: -2rem;
+  padding-right: 2rem;
+}
+
+@media (max-width: 640px) {
+  .step {
+    font-size: 0.75rem;
+    padding: 0.5em 1em;
+  }
+  .step:first-child {
+    /* extend the first item leftward to fill the rest of the space */
+    margin-left: -2rem;
+    padding-left: 2rem;
+  }
+
+  .step:last-child {
+    /* extend the last item rightward to fill the rest of the space */
+    margin-right: -2rem;
+    padding-right: 2rem;
+  }
+}
