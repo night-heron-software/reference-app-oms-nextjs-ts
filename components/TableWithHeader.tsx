@@ -87,13 +87,13 @@ const TableWithHeader = <R extends Record<string, any>>({
                           const cellValue = (row as any)[column.key];
                           let content: React.ReactNode;
 
-                          if (formatter) {
-                            const formattedValue = formatter(cellValue, row);
+                          if (column.formatter) {
+                            const formattedValue = column.formatter(cellValue, row);
                             if (typeof formattedValue === 'string') {
                               content = formattedValue;
                             } else {
                               // Assumes formattedValue is { type: Component, props: {} }
-                              const FormattedComponent = formattedValue.type;
+                              const FormattedComponent = formattedValue.type as React.ElementType;
                               content = <FormattedComponent {...formattedValue.props} />;
                             }
                           } else {

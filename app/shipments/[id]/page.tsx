@@ -1,24 +1,25 @@
 // /Users/jeffromine/src/learning/temporal/reference-app-oms-nextjs-ts/app/shipments/[id]/page.tsx
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
 // Assuming these components are converted to React and available at these paths.
 // Adjust import paths based on your actual project structure (e.g., using path aliases like @/lib/components).
-import Card from '@/components/Card';
 import Button from '@/components/Button';
+import Card from '@/components/Card';
 import Heading from '@/components/Heading';
 import ItemDetails from '@/components/ItemDetails'; // Converted from ItemDetails.svelte
 import ShipmentProgress from '@/components/ShipmentProgress';
+import { OrderItem } from '@/types/order'; // Adjust the import path as necessary
 
 // Type definitions (assuming they are in a shared types file, e.g., ../@/types/order)
 // You should import these from your actual types file.
-interface OrderItem {
+/* interface OrderItem {
   sku: string;
   quantity: number;
   // Add other properties if they exist (e.g., name, price)
 }
-
+ */
 export interface Shipment {
   // Exporting if it's defined here, otherwise import
   id: string;

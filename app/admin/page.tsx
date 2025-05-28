@@ -32,7 +32,7 @@ interface AdminPageProps {
   };
 }
 
-export default function AdminPage({ data }: AdminPageProps) {
+export default function AdminPage() {
   const router = useRouter();
   const { limit, maintenanceMode } = data;
 

@@ -2,16 +2,15 @@
 
 import { fetchOrders } from '@/actions/actions'; // Adjust the import path as necessary
 import { Order } from '@/temporal/src/order';
+import type { TableColumns, TableData } from '@/types/ui'; // Adjust the import path as necessary
 import { useRouter } from 'next/navigation';
-import type { TableData } from '@/types/ui'; // Adjust the import path as necessary
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 // Assuming these are your React components, paths might need adjustment
 // e.g., if your lib folder is aliased to @/lib
 import Button from '@/components/Button';
 import Link from '@/components/Link';
 import StatusBadge from '@/components/StatusBadge';
 import TableWithHeader from '@/components/TableWithHeader'; // Assuming TableWithHeader exports ColumnDefinition
-import { TableColumns } from '@/types/ui';
 
 // Definition for table columns
 export interface ColumnDefinition<TData extends Record<string, any>> {
@@ -37,34 +36,36 @@ function OrdersPage() {
     fetchData();
   }, []);
 
-  const columns: TableColumns = useMemo(
-    () => [
-      {
-        title: 'Order ID',
-        key: 'id',
-        render: (value: string, record: Order) => (
-          // Assuming your Link component takes `value` for text and `href`
-          // If it's like Next.js's Link, it might be:
-          // <Link href={`/orders/${record.id}`}>{record.id}</Link>
-          <Link value={record.id} href={`/orders/${record.id}`} />
-        )
-      },
-      {
-        title: 'Date & Time',
-        key: 'receivedAt',
-        render: (value: string, record: Order) => {
-          const date = new Date(record.receivedAt);
-          return `${date.toLocaleDateString()} ${date.toLocaleTimeString()}`;
-        }
-      },
-      {
-        title: 'Status',
-        key: 'status',
-        render: (value: string, record: Order) => <StatusBadge status={record.status} />
+  // Define columns for the TableWithHeader component
+  // The `formatter` returns an object specifying the component to render and its props.
+  // The `TableWithHeader` component would then instantiate these components.
+  const columns: TableColumns = [
+    {
+      title: 'Order ID',
+      key: 'id',
+      formatter: (value: string) => {
+        return {
+          type: Link,
+          props: { value, href: `/orders/${value}` }
+        };
       }
-    ],
-    [] // Columns definition is static
-  );
+    },
+    {
+      title: 'Date & Time',
+      key: 'received_at',
+      formatter: (value: string) => {
+        return `${new Date(value).toLocaleDateString()} ${new Date(value).toLocaleTimeString()}`;
+      }
+    },
+    {
+      title: 'Status',
+      key: 'status',
+      formatter: (value: string) => ({
+        type: StatusBadge,
+        props: { status: value }
+      })
+    }
+  ];
 
   return (
     <TableWithHeader

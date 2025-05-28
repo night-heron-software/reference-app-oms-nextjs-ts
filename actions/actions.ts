@@ -3,10 +3,11 @@ import 'server-only';
 
 import { TASK_QUEUE_NAME } from '@/temporal/lib/shared';
 import { getTemporalClient } from '@/temporal/src/client';
-import { OrderInput } from '@/temporal/src/definitions';
-import { Order } from '@/temporal/src/order';
+import { Order, Shipment } from '@/temporal/src/order';
 import { processOrder } from '@/temporal/src/workflows';
 import { sql } from '@vercel/postgres';
+import { revalidatePath } from 'next/cache';
+import { redirect } from 'next/navigation';
 
 export async function fetchOrder(id: string): Promise<Order | undefined> {
   const result = await sql`SELECT id, customer_id, status FROM orders WHERE id = ${id}`;
@@ -24,16 +25,18 @@ export async function fetchOrders(): Promise<Order[]> {
 /* ((formData: FormData) => void | Promise<void>) | undefined */
 export async function createOrder(formData: FormData): Promise<void> {
   console.log(JSON.stringify(Object.fromEntries(formData.entries()), null, 2));
-  const order = JSON.parse(formData.get('order') as string);
-  console.log(JSON.stringify(order, null, 2));
+  const formOrder = JSON.parse(formData.get('order') as string);
+  console.log(JSON.stringify(formOrder, null, 2));
 
-  return new Promise((resolve, reject) => {
-    const orderInput: OrderInput = {
-      id: order.id,
-      customerId: order.customerId,
-      items: order.items
-    };
+  const orderInput: Order = {
+    id: formOrder.id,
+    customerId: formOrder.customerId,
+    items: formOrder.items,
+    receivedAt: new Date().toISOString(),
+    status: 'pending'
+  };
 
+  const result = await new Promise((resolve, reject) => {
     getTemporalClient()
       .workflow.start(processOrder, {
         taskQueue: TASK_QUEUE_NAME,
@@ -42,11 +45,33 @@ export async function createOrder(formData: FormData): Promise<void> {
       })
       .then((result) => {
         console.log('Workflow started successfully:', result);
-        resolve();
+        resolve(undefined);
       })
       .catch((error) => {
         console.error('Error starting workflow:', error);
         reject(error);
       });
+    // Use Next.js's redirect function to navigate to the order details page
   });
+
+  console.log('Workflow result:', JSON.stringify(result, null, 2));
+
+  const insertedOrder = await insertOrder(orderInput);
+  console.log('Inserted order:', JSON.stringify(insertedOrder, null, 2));
+  revalidatePath('/orders');
+  redirect(`/orders/${formOrder.id}`);
+}
+
+export async function fetchShipments(): Promise<Shipment[]> {
+  const result = await sql`SELECT id, status FROM shipments ORDER BY booked_at DESC`;
+  return result.rows as Shipment[];
+}
+async function insertOrder(order: Order): Promise<number> {
+  const result =
+    await sql`INSERT INTO orders (id, customer_id, received_at, status) VALUES (${order.id}, ${order.customerId}, ${new Date().toISOString()}, ${order.status})`;
+  if (result == null) {
+    console.error('Failed to insert order');
+    throw new Error('Failed to insert order');
+  }
+  return result.rowCount == null ? 0 : result.rowCount;
 }

@@ -47,7 +47,6 @@ export default function NewOrder() {
         <form
           action={createOrder}
           className="flex w-full flex-col gap-2 items-end"
-          method="POST"
           /*    use:enhance={() => {
                     loading = true;
                     return async ({ result }) => {

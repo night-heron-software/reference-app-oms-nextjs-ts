@@ -276,3 +276,11 @@ curl -d '{"itemId":"1", "transactionId":"abc124"}' \
 https://www.npmjs.com/package/@vercel/postgres
 
 #+end_src
+
+** Run reference-app-oms-nextjs-ts
+
+
+#+begin_src shell-script
+temporal server start-dev --db-filename local.db
+npm-run-all -l build:temporal --parallel dev:temporal dev:next start:worker
+#+end_src

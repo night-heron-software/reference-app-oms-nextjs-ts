@@ -1,4 +1,4 @@
-import type { Component } from 'react';
+import type { Component, FunctionComponent } from 'react';
 export interface Persona {
   role: string;
   link: string; // Assuming 'link' is a property used by the Link component
@@ -6,9 +6,8 @@ export interface Persona {
   // Add other properties of a persona if they exist
   [key: string]: any; // Allow other properties
 }
-
 type ComponentRef = {
-  type: Component<unknown, any>;
+  type: React.ComponentType<any>;
   props: Record<string, any>;
 };
 
