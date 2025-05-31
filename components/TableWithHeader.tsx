@@ -1,8 +1,7 @@
 'use client';
+import { useMemo, useState } from 'react';
 // This is a client-side component in Next.js
-import React, { useState, useMemo } from 'react';
 import Heading from './Heading'; // Assuming Heading.tsx or Heading.jsx
-import Link from './Link'; // Assuming Link.tsx or Link.jsx
 import type { TableColumns, TableData, Persona } from '@/types/ui'; // Adjust the import path as necessary
 // Define types similar to what would be in $lib/types/ui
 // In a real project, import these from your shared types location.
@@ -14,11 +13,11 @@ interface TableWithHeaderProps<R = any> {
   data: TableData;
 }
 
-const formatter = (value: string, row: any) => ({
+/* const formatter = (value: string, row: any) => ({
   type: Link, // The React Link component
   props: { value: value, href: row.link } // Props for the Link component
 });
-
+ */
 const TableWithHeader = <R extends Record<string, any>>({
   title,
   description,

@@ -54,12 +54,19 @@ export async function buildFulfillments(order: OrderInput): Promise<ReserveItems
   return reserveItems({ orderId: order.id, items: orderItems });
 }
 
-export const getOrderStatus = defineQuery<string>('getStatus');
+export interface OrderRunStatus {
+  id: string;
+  customerId: string;
+  receivedAt: string;
+  items: OrderItem[];
+  fulfillments?: Fulfillment[];
+  status: string;
+}
+export const getOrderStatus = defineQuery<OrderRunStatus>('getOrderStatus');
 
-export async function processOrder(input: OrderInput): Promise<Order> {
+export async function processOrder(input: OrderInput): Promise<OrderRunStatus> {
   const order = setupOrder(input);
   //const wf = Workflow.getExternalWorkflowHandle(order.id);
-  setHandler(getOrderStatus, () => order.status);
 
   console.log(`Order: ${JSON.stringify(order, null, 2)} created!`);
   const reserveItemsResult = await buildFulfillments(input);
@@ -84,7 +91,12 @@ export async function processOrder(input: OrderInput): Promise<Order> {
       };
     }
   );
-  const result = { ...order, fulfillments: fulfillments };
+
+  const result: OrderRunStatus = { ...order, fulfillments: fulfillments };
+  setHandler(getOrderStatus, () => {
+    console.log(`getOrderStatus called for order: ${order.id}`);
+    return result;
+  });
   console.log(`order: ${JSON.stringify(result, null, 2)}`);
   return result;
 }

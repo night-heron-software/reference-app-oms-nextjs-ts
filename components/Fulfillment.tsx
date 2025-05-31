@@ -21,23 +21,24 @@ import React, { useMemo } from 'react';
 //   fulfillments?: Fulfillment[]; // Fulfillments are optional on an order
 //   // ... other order properties
 // }
-import type { Order, Fulfillment as FulfillmentType, Item } from '@/types/order';
+import type { Fulfillment as FulfillmentType } from '@/types/order';
 
 // Assuming these child components are converted to React (.tsx) and are in the same directory
 // or accessible via a path alias like '@/components/'
+import { OrderRunStatus } from '@/temporal/src/workflows';
 import ItemDetails from './ItemDetails'; // Expects props like: { items: Item[] }
 import Payment from './Payment'; // Expects props like: { payment: PaymentDetails }
 import ShipmentProgress from './ShipmentProgress'; // Expects props like: { status: string }
 
 interface FulfillmentComponentProps {
-  order: Order; // Based on Svelte's $props(), order is expected to be provided
+  order: OrderRunStatus; // Based on Svelte's $props(), order is expected to be provided
 }
 
 const Fulfillment: React.FC<FulfillmentComponentProps> = ({ order }) => {
   // Svelte: let fulfillments: Fulfillment[] = $derived(order?.fulfillments || []);
   // useMemo will recompute only if order.fulfillments changes.
   const fulfillments: FulfillmentType[] = useMemo(
-    () => order.fulfillments || [],
+    () => (order.fulfillments as FulfillmentType[]) || [],
     [order.fulfillments]
   );
 

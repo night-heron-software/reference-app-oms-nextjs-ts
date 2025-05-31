@@ -4,11 +4,10 @@ import 'server-only';
 import { TASK_QUEUE_NAME } from '@/temporal/lib/shared';
 import { getTemporalClient } from '@/temporal/src/client';
 import { Order, Shipment } from '@/temporal/src/order';
-import { getOrderStatus, processOrder } from '@/temporal/src/workflows';
+import { OrderRunStatus, getOrderStatus, processOrder } from '@/temporal/src/workflows';
 import { sql } from '@vercel/postgres';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
-import { getOrderStatus as getStatus } from '@/temporal/src/workflows';
 
 export async function fetchOrder(id: string): Promise<Order | undefined> {
   const result = await sql`SELECT id, customer_id, status FROM orders WHERE id = ${id}`;
@@ -77,11 +76,16 @@ async function insertOrder(order: Order): Promise<number> {
   return result.rowCount == null ? 0 : result.rowCount;
 }
 
-export async function fetchOrderById(id: string): Promise<Order | undefined> {
+export async function fetchOrderById(id: string): Promise<OrderRunStatus | undefined> {
   const client = getTemporalClient();
 
   const handle = await client.workflow.getHandle(id);
-  const status = await handle.query(getOrderStatus);
-  console.log(`Order status for ${id}: ${status}`);
-  return undefined;
+  try {
+    const orderStatus = await handle.query(getOrderStatus);
+    console.log(`Fetched order: ${JSON.stringify(orderStatus, null, 2)}`);
+    return orderStatus;
+  } catch (error) {
+    console.error(`Error fetching order by ID ${id}:`, error);
+    return undefined;
+  }
 }

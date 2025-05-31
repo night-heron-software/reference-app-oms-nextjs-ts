@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useMemo, useCallback } from 'react';
+import { useEffect, useState, useMemo, useCallback, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { fetchOrderById } from '@/actions/actions'; // Adjust the import path as necessary
 
@@ -23,16 +23,18 @@ import StatusBadge from '@/components/StatusBadge';
 //   // ... other properties
 // }
 import type { Action, Order } from '@/types/order';
+import { OrderRunStatus } from '@/temporal/src/workflows';
 
 interface OrderPageProps {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }
 
-export default function OrderPage({ params }: OrderPageProps) {
+export default function OrderPage(props: OrderPageProps) {
+  const params = use(props.params);
   const router = useRouter();
   const { id } = params;
 
-  const [order, setOrder] = useState<Order | null>(null);
+  const [order, setOrder] = useState<OrderRunStatus | null>(null);
   const [actionLoading, setActionLoading] = useState(false); // For action buttons
   const [pageLoading, setPageLoading] = useState(true); // For initial order load
 
@@ -40,7 +42,21 @@ export default function OrderPage({ params }: OrderPageProps) {
   useEffect(() => {
     if (id) {
       setPageLoading(true);
-      fetchOrderById(id);
+      const orderStatus = fetchOrderById(id);
+      orderStatus
+        .then((fetchedOrder) => {
+          if (!fetchedOrder) {
+            //console.error('Order not found or failed to load');
+            setPageLoading(false);
+            return;
+          }
+          setOrder(fetchedOrder);
+          setPageLoading(false);
+        })
+        .catch((error) => {
+          console.error('Error fetching order:', error);
+          setPageLoading(false);
+        });
     }
   }, [id, fetchOrderById]);
 
@@ -49,7 +65,7 @@ export default function OrderPage({ params }: OrderPageProps) {
     if (!order || pageLoading) return;
 
     const finalStatuses = ['completed', 'failed', 'cancelled', 'timedOut'];
-    const isFinal = order.status && finalStatuses.includes(order.status);
+    const isFinal = order?.status && finalStatuses.includes(order.status);
 
     if (isFinal) return; // Stop polling if status is final
 
@@ -114,7 +130,7 @@ export default function OrderPage({ params }: OrderPageProps) {
           </Button>
         </div>
       );
-    } else if (order.customerId) {
+    } else {
       return (
         <p className="px-4 py-2 text-sm font-light mt-4">
           <i>Customer {order.customerId}</i>
@@ -128,7 +144,7 @@ export default function OrderPage({ params }: OrderPageProps) {
     <Card>
       <div className="w-full flex flex-col gap-2">
         <div className="flex flex-row items-center gap-2 w-full">
-          <StatusBadge status={order.status} />
+          <StatusBadge status={order?.status || 'unkown'} />
           <Heading>{order.id}</Heading>
         </div>
         <Fulfillment order={order} />
