@@ -33,6 +33,15 @@ function setupOrder(input: OrderInput): Order {
 
   return order;
 }
+const { reserveItems, fetchOrders } = proxyActivities<typeof activities>({
+  retry: {
+    initialInterval: '1 second',
+    maximumInterval: '1 minute',
+    backoffCoefficient: 2,
+    maximumAttempts: 500
+  },
+  startToCloseTimeout: '1 minute'
+});
 
 export async function buildFulfillments(order: OrderInput): Promise<ReserveItemsResult> {
   const orderItems: OrderItem[] = order.items.map((item: ItemInput) => {
@@ -40,15 +49,6 @@ export async function buildFulfillments(order: OrderInput): Promise<ReserveItems
       throw new Error('Item quantity cannot be undefined');
     }
     return { sku: item.sku, quantity: item.quantity };
-  });
-  const { reserveItems } = proxyActivities<typeof activities>({
-    retry: {
-      initialInterval: '1 second',
-      maximumInterval: '1 minute',
-      backoffCoefficient: 2,
-      maximumAttempts: 500
-    },
-    startToCloseTimeout: '1 minute'
   });
 
   return reserveItems({ orderId: order.id, items: orderItems });
@@ -64,9 +64,46 @@ export interface OrderRunStatus {
 }
 export const getOrderStatus = defineQuery<OrderRunStatus>('getOrderStatus');
 
+function customerActionRequired(order: Order): boolean {
+  if (!order.fulfillments || order.fulfillments.length === 0) {
+    console.log(`No fulfillments found for order: ${order.id}`);
+    return false;
+  }
+
+  for (const fulfillment of order.fulfillments) {
+    if (fulfillment.status === 'unavailable') {
+      console.log(`Customer action required for fulfillment: ${fulfillment.id}`);
+      return true; // Customer action is required
+    }
+  }
+  return false;
+}
+/* func (wf *orderImpl) updateStatus(ctx workflow.Context, status string) error {
+	wf.status = status
+
+	update := &OrderStatusUpdate{
+		ID:     wf.id,
+		Status: wf.status,
+	}
+
+	ctx = workflow.WithLocalActivityOptions(ctx, workflow.LocalActivityOptions{
+		ScheduleToCloseTimeout: 5 * time.Second,
+	})
+	return workflow.ExecuteLocalActivity(ctx, a.UpdateOrderStatus, update).Get(ctx, nil)
+}
+export async function updateOrderStatus(input: Order): Promise<OrderRunStatus> {
+  
+} */
+
 export async function processOrder(input: OrderInput): Promise<OrderRunStatus> {
+  const orders = await fetchOrders();
+  console.log(`Fetched ${orders.length} orders from the database.`);
+
   const order = setupOrder(input);
-  //const wf = Workflow.getExternalWorkflowHandle(order.id);
+  if (customerActionRequired(order)) {
+    // update order status to indicate customer action is required
+    order.status = 'customerActionRequired';
+  }
 
   console.log(`Order: ${JSON.stringify(order, null, 2)} created!`);
   const reserveItemsResult = await buildFulfillments(input);

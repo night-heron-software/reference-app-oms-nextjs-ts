@@ -62,6 +62,24 @@ interface ShipmentsPageProps {
     shipments: Shipment[];
   };
 }
+const columns = [
+  {
+    title: 'Shipment ID',
+    key: 'id',
+    formatter: (value: string) => ({
+      type: Link,
+      props: { value, href: `/shipments/${value}` }
+    })
+  },
+  {
+    title: 'Status',
+    key: 'status',
+    formatter: (value: string) => ({
+      type: StatusBadge,
+      props: { status: value }
+    })
+  }
+];
 
 export default function ShipmentsPage() {
   const [shipments, setShipments] = useState<Shipment[]>([]);
@@ -77,26 +95,6 @@ export default function ShipmentsPage() {
     };
     fetchInitialShipments();
   }, []);
-
-  const columns: TableColumns = useMemo(
-    () => [
-      {
-        title: 'Shipment ID',
-        key: 'id',
-        render: (value: string, record: Shipment) => (
-          <Link value={record.id} href={`/orders/${record.id}`} />
-        )
-      },
-      {
-        title: 'Status',
-        key: 'status',
-        render: (value: string, record: Shipment) => (
-          <Link value={record.id} href={`/orders/${record.id}`} />
-        )
-      }
-    ],
-    []
-  );
 
   return <TableWithHeader title="Shipments" columns={columns} data={shipments} />;
 }

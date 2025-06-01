@@ -55,7 +55,7 @@ export async function createOrder(formData: FormData): Promise<void> {
   });
 
   console.log('Workflow result:', JSON.stringify(result, null, 2));
-
+  // This Should Happen in the worflow, but for now we do it here
   const insertedOrder = await insertOrder(orderInput);
   console.log('Inserted order:', JSON.stringify(insertedOrder, null, 2));
   revalidatePath('/orders');
@@ -66,6 +66,7 @@ export async function fetchShipments(): Promise<Shipment[]> {
   const result = await sql`SELECT id, status FROM shipments ORDER BY booked_at DESC`;
   return result.rows as Shipment[];
 }
+
 async function insertOrder(order: Order): Promise<number> {
   const result =
     await sql`INSERT INTO orders (id, customer_id, received_at, status) VALUES (${order.id}, ${order.customerId}, ${new Date().toISOString()}, ${order.status})`;
