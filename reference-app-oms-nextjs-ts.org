@@ -286,5 +286,157 @@ npm-run-all -l build:temporal --parallel dev:temporal dev:next start:worker
 #+end_src
 
 #+begin_src json
-{"_VOLTA_TOOL_RECURSION":"1","TERM_PROGRAM":"vscode","NODE":"/Users/jeffromine/.volta/tools/image/node/23.7.0/bin/node","INIT_CWD":"/Users/jeffromine/src/learning/temporal/reference-app-oms-nextjs-ts","SHELL":"/bin/zsh","TERM":"xterm-256color","EMACS_PLUGIN_LAUNCHER":"/Users/jeffromine/.oh-my-zsh/plugins/emacs/emacsclient.sh","TMPDIR":"/var/folders/gy/hn1zsl6563bd9smq7_6c13kc0000gn/T/","npm_config_global_prefix":"/Users/jeffromine/.volta/tools/image/node/23.7.0","TERM_PROGRAM_VERSION":"1.100.2","MallocNanoZone":"0","ORIGINAL_XDG_CURRENT_DESKTOP":"undefined","VOLTA_HOME":"/Users/jeffromine/.volta","ZDOTDIR":"/Users/jeffromine","COLOR":"1","npm_config_noproxy":"","SDKMAN_PLATFORM":"darwinx64","npm_config_local_prefix":"/Users/jeffromine/src/learning/temporal/reference-app-oms-nextjs-ts","PNPM_HOME":"/Users/jeffromine/Library/pnpm","ZSH":"/Users/jeffromine/.oh-my-zsh","USER":"jeffromine","LS_COLORS":"di=1;36:ln=35:so=32:pi=33:ex=31:bd=34;46:cd=34;43:su=30;41:sg=30;46:tw=30;42:ow=30;43","COMMAND_MODE":"unix2003","npm_config_globalconfig":"/Users/jeffromine/.volta/tools/image/node/23.7.0/etc/npmrc","SDKMAN_CANDIDATES_API":"https://api.sdkman.io/2","SSH_AUTH_SOCK":"/private/tmp/com.apple.launchd.qSBAbqngAg/Listeners","VSCODE_PROFILE_INITIALIZED":"1","__CF_USER_TEXT_ENCODING":"0x1F5:0x0:0x0","npm_execpath":"/Users/jeffromine/.volta/tools/image/npm/11.2.0/bin/npm-cli.js","PAGER":"less","LSCOLORS":"Gxfxcxdxbxegedabagacad","MAVEN_HOME":"/Users/jeffromine/.sdkman/candidates/maven/current","PATH":"/Users/jeffromine/src/learning/temporal/reference-app-oms-nextjs-ts/node_modules/.bin:/Users/jeffromine/src/learning/temporal/node_modules/.bin:/Users/jeffromine/src/learning/node_modules/.bin:/Users/jeffromine/src/node_modules/.bin:/Users/jeffromine/node_modules/.bin:/Users/node_modules/.bin:/node_modules/.bin:/Users/jeffromine/.volta/tools/image/npm/11.2.0/node_modules/@npmcli/run-script/lib/node-gyp-bin:/Users/jeffromine/.volta/tools/image/npm/11.2.0/bin:/Users/jeffromine/.volta/tools/image/yarn/3.7.0/bin:/Users/jeffromine/.volta/tools/image/node/23.7.0/bin:/Users/jeffromine/.bun/bin:/usr/local/opt/libpq/bin:/Users/jeffromine/google-cloud-sdk/bin:/Users/jeffromine/.volta/bin:/usr/local/opt/postgresql@15/bin:/Library/Frameworks/Python.framework/Versions/3.12/bin:/usr/local/bin:/System/Cryptexes/App/usr/bin:/usr/bin:/bin:/usr/sbin:/sbin:/Applications/Emacs.app/Contents/MacOS/bin-x86_64-10_11:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin:/usr/local/MacGPG2/bin:/usr/local/share/dotnet:~/.dotnet/tools:/usr/local/go/bin:/Users/jeffromine/.bun/bin:/usr/local/opt/libpq/bin:/Users/jeffromine/google-cloud-sdk/bin:/Users/jeffromine/.volta/bin:/Users/jeffromine/Library/pnpm:/usr/local/opt/postgresql@15/bin:/Users/jeffromine/.sdkman/candidates/maven/current/bin:/Users/jeffromine/.sdkman/candidates/java/current/bin:/Library/Frameworks/Python.framework/Versions/3.12/bin:/Applications/Visual Studio Code.app/Contents/Resources/app/bin:/Users/jeffromine/Library/Application Support/Code/User/globalStorage/github.copilot-chat/debugCommand:/Applications/Visual Studio Code.app/Contents/Resources/app/bin","npm_package_json":"/Users/jeffromine/src/learning/temporal/reference-app-oms-nextjs-ts/package.json","_":"/Users/jeffromine/src/learning/temporal/reference-app-oms-nextjs-ts/node_modules/.bin/nodemon","npm_config_userconfig":"/Users/jeffromine/.npmrc","npm_config_init_module":"/Users/jeffromine/.npm-init.js","USER_ZDOTDIR":"/Users/jeffromine","__CFBundleIdentifier":"com.microsoft.VSCode","npm_command":"run-script","PWD":"/Users/jeffromine/src/learning/temporal/reference-app-oms-nextjs-ts","JAVA_HOME":"/Users/jeffromine/.sdkman/candidates/java/current","npm_lifecycle_event":"start:worker","EDITOR":"/Users/jeffromine/.oh-my-zsh/plugins/emacs/emacsclient.sh","npm_package_name":"reference-app-oms-nextjs-ts","LANG":"en_US.UTF-8","CLOUDSDK_PYTHON":"/Library/Frameworks/Python.framework/Versions/3.12/bin/python3","npm_config_npm_version":"11.2.0","BUN_INSPECT_CONNECT_TO":"unix:///var/folders/gy/hn1zsl6563bd9smq7_6c13kc0000gn/T/v9sl6xkcp9.sock","VSCODE_GIT_ASKPASS_EXTRA_ARGS":"","XPC_FLAGS":"0x0","npm_config_node_gyp":"/Users/jeffromine/.volta/tools/image/npm/11.2.0/node_modules/node-gyp/bin/node-gyp.js","npm_package_version":"0.1.0","XPC_SERVICE_NAME":"0","VSCODE_INJECTION":"1","HOME":"/Users/jeffromine","SHLVL":"3","VSCODE_GIT_ASKPASS_MAIN":"/Applications/Visual Studio Code.app/Contents/Resources/app/extensions/git/dist/askpass-main.js","npm_config_cache":"/Users/jeffromine/.npm","LESS":"-R","LOGNAME":"jeffromine","npm_lifecycle_script":"nodemon ./temporal/lib/worker","SDKMAN_DIR":"/Users/jeffromine/.sdkman","VSCODE_GIT_IPC_HANDLE":"/var/folders/gy/hn1zsl6563bd9smq7_6c13kc0000gn/T/vscode-git-ae55786291.sock","BUN_INSTALL":"/Users/jeffromine/.bun","npm_config_user_agent":"npm/11.2.0 node/v23.7.0 darwin x64 workspaces/false","GIT_ASKPASS":"/Applications/Visual Studio Code.app/Contents/Resources/app/extensions/git/dist/askpass.sh","SDKMAN_CANDIDATES_DIR":"/Users/jeffromine/.sdkman/candidates","VSCODE_GIT_ASKPASS_NODE":"/Applications/Visual Studio Code.app/Contents/Frameworks/Code Helper (Plugin).app/Contents/MacOS/Code Helper (Plugin)","npm_node_execpath":"/Users/jeffromine/.volta/tools/image/node/23.7.0/bin/node","npm_config_prefix":"/Users/jeffromine/.volta/tools/image/node/23.7.0","COLORTERM":"truecolor"}
+{
+  "_VOLTA_TOOL_RECURSION": "1",
+  "TERM_PROGRAM": "vscode",
+  "NODE": "/Users/jeffromine/.volta/tools/image/node/23.7.0/bin/node",
+  "INIT_CWD": "/Users/jeffromine/src/learning/temporal/reference-app-oms-nextjs-ts",
+  "TERM": "xterm-256color",
+  "SHELL": "/bin/zsh",
+  "BUN_INSPECT": "ws+unix:///var/folders/gy/hn1zsl6563bd9smq7_6c13kc0000gn/T/275csdm3j7r.sock?wait=1",
+  "TMPDIR": "/var/folders/gy/hn1zsl6563bd9smq7_6c13kc0000gn/T/",
+  "EMACS_PLUGIN_LAUNCHER": "/Users/jeffromine/.oh-my-zsh/plugins/emacs/emacsclient.sh",
+  "npm_config_global_prefix": "/Users/jeffromine/.volta/tools/image/node/23.7.0",
+  "TERM_PROGRAM_VERSION": "1.100.2",
+  "NODE_OPTIONS": " --require \"/Applications/Visual Studio Code.app/Contents/Resources/app/extensions/ms-vscode.js-debug/src/bootloader.js\"  --inspect-publish-uid=http",
+  "ZDOTDIR": "/Users/jeffromine",
+  "VOLTA_HOME": "/Users/jeffromine/.volta",
+  "ORIGINAL_XDG_CURRENT_DESKTOP": "undefined",
+  "MallocNanoZone": "0",
+  "COLOR": "0",
+  "SDKMAN_PLATFORM": "darwinx64",
+  "npm_config_noproxy": "",
+  "ZSH": "/Users/jeffromine/.oh-my-zsh",
+  "PNPM_HOME": "/Users/jeffromine/Library/pnpm",
+  "npm_config_local_prefix": "/Users/jeffromine/src/learning/temporal/reference-app-oms-nextjs-ts",
+  "USER": "jeffromine",
+  "LS_COLORS": "di=1;36:ln=35:so=32:pi=33:ex=31:bd=34;46:cd=34;43:su=30;41:sg=30;46:tw=30;42:ow=30;43",
+  "COMMAND_MODE": "unix2003",
+  "SDKMAN_CANDIDATES_API": "https://api.sdkman.io/2",
+  "npm_config_globalconfig": "/Users/jeffromine/.volta/tools/image/node/23.7.0/etc/npmrc",
+  "SSH_AUTH_SOCK": "/private/tmp/com.apple.launchd.2wWLp3FbcI/Listeners",
+  "__CF_USER_TEXT_ENCODING": "0x1F5:0x0:0x0",
+  "VSCODE_PROFILE_INITIALIZED": "1",
+  "npm_execpath": "/Users/jeffromine/.volta/tools/image/npm/11.2.0/bin/npm-cli.js",
+  "PAGER": "less",
+  "LSCOLORS": "Gxfxcxdxbxegedabagacad",
+  "PATH": "/Users/jeffromine/src/learning/temporal/reference-app-oms-nextjs-ts/node_modules/.bin:/Users/jeffromine/src/learning/temporal/node_modules/.bin:/Users/jeffromine/src/learning/node_modules/.bin:/Users/jeffromine/src/node_modules/.bin:/Users/jeffromine/node_modules/.bin:/Users/node_modules/.bin:/node_modules/.bin:/Users/jeffromine/.volta/tools/image/npm/11.2.0/node_modules/@npmcli/run-script/lib/node-gyp-bin:/Users/jeffromine/src/learning/temporal/reference-app-oms-nextjs-ts/node_modules/.bin:/Users/jeffromine/src/learning/temporal/node_modules/.bin:/Users/jeffromine/src/learning/node_modules/.bin:/Users/jeffromine/src/node_modules/.bin:/Users/jeffromine/node_modules/.bin:/Users/node_modules/.bin:/node_modules/.bin:/Users/jeffromine/.volta/tools/image/npm/11.2.0/node_modules/@npmcli/run-script/lib/node-gyp-bin:/Users/jeffromine/.volta/tools/image/npm/11.2.0/bin:/Users/jeffromine/.volta/tools/image/yarn/3.7.0/bin:/Users/jeffromine/.volta/tools/image/node/23.7.0/bin:/Users/jeffromine/.bun/bin:/usr/local/opt/libpq/bin:/Users/jeffromine/google-cloud-sdk/bin:/Users/jeffromine/.volta/bin:/usr/local/opt/postgresql@15/bin:/Library/Frameworks/Python.framework/Versions/3.12/bin:/usr/local/bin:/System/Cryptexes/App/usr/bin:/usr/bin:/bin:/usr/sbin:/sbin:/Applications/Emacs.app/Contents/MacOS/bin-x86_64-10_11:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin:/usr/local/MacGPG2/bin:/usr/local/share/dotnet:~/.dotnet/tools:/usr/local/go/bin:/Users/jeffromine/.bun/bin:/usr/local/opt/libpq/bin:/Users/jeffromine/google-cloud-sdk/bin:/Users/jeffromine/.volta/bin:/Users/jeffromine/Library/pnpm:/usr/local/opt/postgresql@15/bin:/Users/jeffromine/.sdkman/candidates/maven/current/bin:/Users/jeffromine/.sdkman/candidates/java/current/bin:/Library/Frameworks/Python.framework/Versions/3.12/bin:/Applications/Visual Studio Code.app/Contents/Resources/app/bin:/Users/jeffromine/Library/Application Support/Code/User/globalStorage/github.copilot-chat/debugCommand:/Applications/Visual Studio Code.app/Contents/Resources/app/bin",
+  "MAVEN_HOME": "/Users/jeffromine/.sdkman/candidates/maven/current",
+  "VSCODE_INSPECTOR_OPTIONS": "{\"inspectorIpc\":\"/var/folders/gy/hn1zsl6563bd9smq7_6c13kc0000gn/T/node-cdp.2251-5569e633-1.sock\",\"deferredMode\":false,\"waitForDebugger\":\"\",\"execPath\":\"/Users/jeffromine/.volta/bin/node\",\"onlyEntrypoint\":false,\"autoAttachMode\":\"always\",\"openerId\":\"d1fe98a029b8fa93fe7b1c87\"}",
+  "_": "/Users/jeffromine/.volta/tools/image/node/23.7.0/bin/node",
+  "npm_package_json": "/Users/jeffromine/src/learning/temporal/reference-app-oms-nextjs-ts/package.json",
+  "__CFBundleIdentifier": "com.microsoft.VSCode",
+  "USER_ZDOTDIR": "/Users/jeffromine",
+  "npm_config_init_module": "/Users/jeffromine/.npm-init.js",
+  "npm_config_userconfig": "/Users/jeffromine/.npmrc",
+  "PWD": "/Users/jeffromine/src/learning/temporal/reference-app-oms-nextjs-ts",
+  "npm_command": "run-script",
+  "JAVA_HOME": "/Users/jeffromine/.sdkman/candidates/java/current",
+  "EDITOR": "/Users/jeffromine/.oh-my-zsh/plugins/emacs/emacsclient.sh",
+  "npm_lifecycle_event": "start:worker",
+  "LANG": "en_US.UTF-8",
+  "npm_package_name": "reference-app-oms-nextjs-ts",
+  "CLOUDSDK_PYTHON": "/Library/Frameworks/Python.framework/Versions/3.12/bin/python3",
+  "BUN_INSPECT_NOTIFY": "unix:///var/folders/gy/hn1zsl6563bd9smq7_6c13kc0000gn/T/3v28nec4szw.sock",
+  "XPC_FLAGS": "0x0",
+  "VSCODE_GIT_ASKPASS_EXTRA_ARGS": "",
+  "BUN_INSPECT_CONNECT_TO": "unix:///var/folders/gy/hn1zsl6563bd9smq7_6c13kc0000gn/T/v9sl6xkcp9.sock",
+  "npm_config_npm_version": "11.2.0",
+  "npm_config_node_gyp": "/Users/jeffromine/.volta/tools/image/npm/11.2.0/node_modules/node-gyp/bin/node-gyp.js",
+  "XPC_SERVICE_NAME": "0",
+  "npm_package_version": "0.1.0",
+  "VSCODE_INJECTION": "1",
+  "SHLVL": "4",
+  "HOME": "/Users/jeffromine",
+  "VSCODE_GIT_ASKPASS_MAIN": "/Applications/Visual Studio Code.app/Contents/Resources/app/extensions/git/dist/askpass-main.js",
+  "LOGNAME": "jeffromine",
+  "LESS": "-R",
+  "npm_config_cache": "/Users/jeffromine/.npm",
+  "SDKMAN_DIR": "/Users/jeffromine/.sdkman",
+  "npm_lifecycle_script": "node  --watch --env-file=.env.local ./temporal/lib/worker",
+  "VSCODE_GIT_IPC_HANDLE": "/var/folders/gy/hn1zsl6563bd9smq7_6c13kc0000gn/T/vscode-git-ae55786291.sock",
+  "BUN_INSTALL": "/Users/jeffromine/.bun",
+  "npm_config_user_agent": "npm/11.2.0 node/v23.7.0 darwin x64 workspaces/false",
+  "VSCODE_GIT_ASKPASS_NODE": "/Applications/Visual Studio Code.app/Contents/Frameworks/Code Helper (Plugin).app/Contents/MacOS/Code Helper (Plugin)",
+  "SDKMAN_CANDIDATES_DIR": "/Users/jeffromine/.sdkman/candidates",
+  "GIT_ASKPASS": "/Applications/Visual Studio Code.app/Contents/Resources/app/extensions/git/dist/askpass.sh",
+  "COLORTERM": "truecolor",
+  "npm_config_prefix": "/Users/jeffromine/.volta/tools/image/node/23.7.0",
+  "npm_node_execpath": "/Users/jeffromine/.volta/tools/image/node/23.7.0/bin/node",
+  "WATCH_REPORT_DEPENDENCIES": "1",
+  "DATABASE_URL": "postgres://default:LFrOHQ8iBRh9@ep-muddy-band-a4dr8n83-pooler.us-east-1.aws.neon.tech/verceldb?sslmode=require",
+  "DATABASE_URL_UNPOOLED": "postgresql://default:LFrOHQ8iBRh9@ep-muddy-band-a4dr8n83.us-east-1.aws.neon.tech/verceldb?sslmode=require",
+  "PGDATABASE": "verceldb",
+  "PGHOST": "ep-muddy-band-a4dr8n83-pooler.us-east-1.aws.neon.tech",
+  "PGHOST_UNPOOLED": "ep-muddy-band-a4dr8n83.us-east-1.aws.neon.tech",
+  "PGPASSWORD": "LFrOHQ8iBRh9",
+  "PGUSER": "default",
+  "POSTGRES_DATABASE": "verceldb",
+  "POSTGRES_HOST": "ep-muddy-band-a4dr8n83-pooler.us-east-1.aws.neon.tech",
+  "POSTGRES_PASSWORD": "LFrOHQ8iBRh9",
+  "POSTGRES_PRISMA_URL": "postgres://default:LFrOHQ8iBRh9@ep-muddy-band-a4dr8n83-pooler.us-east-1.aws.neon.tech/verceldb?pgbouncer=true&connect_timeout=15&sslmode=require",
+  "POSTGRES_URL": "postgres://default:LFrOHQ8iBRh9@ep-muddy-band-a4dr8n83-pooler.us-east-1.aws.neon.tech/verceldb?sslmode=require",
+  "POSTGRES_URL_NON_POOLING": "postgres://default:LFrOHQ8iBRh9@ep-muddy-band-a4dr8n83.us-east-1.aws.neon.tech/verceldb?sslmode=require",
+  "POSTGRES_URL_NO_SSL": "postgres://default:LFrOHQ8iBRh9@ep-muddy-band-a4dr8n83-pooler.us-east-1.aws.neon.tech/verceldb",
+  "POSTGRES_USER": "default",
+  "VERCEL_ENV": "development"
+}
 #+end_src
+
+#+begin_quote
+
+Temporal's Go SDK and TypeScript SDK offer similar functionalities,
+but they are tailored to their respective languages'
+ecosystems. Here's a breakdown of their equivalents:
+
+- Core Concepts
+  - Workflows: Both SDKs allow you to define long-running processes as
+    workflows.
+  - Activities: Both allow you to define short-lived tasks as
+    activities. These are used for operations that can fail or are not
+    deterministic.
+  - Workers: Both SDKs use workers to execute workflows and
+    activities.
+  - Client: Both provide a client to interact with the Temporal
+    service.
+
+- Go SDK Equivalents in TypeScript SDK
+  - time.Now() in Go is replaced by workflow.now() in TypeScript.
+  - time.Sleep() in Go is replaced by workflow.sleep() in TypeScript.
+  - workflow.Go() in Go is replaced by workflow.startChild() in
+    TypeScript.
+  - Go's chan is replaced by workflow.channel in TypeScript.
+  - Go's select is replaced by workflow.selector in TypeScript.
+  - Go's context.Context is replaced by workflow.context in
+    TypeScript.
+  - Go's slog logging is replaced by workflow.getLogger() in
+    TypeScript.
+  - Key Differences
+  - Deterministic Execution: The TypeScript SDK enforces a
+    deterministic execution environment for workflows, meaning that
+    external state access and side effects must be done through
+    activities.
+  - Node.js and DOM APIs: In TypeScript, workflows cannot directly
+    import Node.js or DOM APIs.
+  - Testing: Both SDKs offer testing frameworks for workflows and
+    activities.
+  - Language Idioms: Each SDK is designed to align with the idiomatic
+    practices of its respective language.
+  - Workflow Updates: Both SDKs support workflow updates, allowing
+    modifications to running workflows.
+  - TypeScript SDK Packages
+
+- The TypeScript SDK is structured into several packages:
+  - @temporalio/client: For interacting with the Temporal service.
+  - @temporalio/worker: For running workflow and activity workers.
+  - @temporalio/workflow: For defining workflows.
+  - @temporalio/activity: For defining activities.
+  - @temporalio/testing: For testing workflows and activities.
+
+
+In summary, while both SDKs offer similar core functionality, their
+implementation details and idiomatic usage differ to fit the Go and
+TypeScript ecosystems. The TypeScript SDK emphasizes deterministic
+workflow execution, while the Go SDK leverages Go's concurrency
+primitives.
+#+end_quote

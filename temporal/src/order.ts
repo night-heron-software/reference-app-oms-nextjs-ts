@@ -65,6 +65,15 @@ export interface Order {
   fulfillments?: Fulfillment[];
   status: OrderStatus;
 }
+/* export interface OrderRunStatus {
+  id: string;
+  customerId: string;
+  receivedAt: string;
+  items: OrderItem[];
+  fulfillments?: Fulfillment[];
+  status: string;
+} */
+
 export interface ReserveItemsInput {
   orderId: string;
   items: OrderItem[];

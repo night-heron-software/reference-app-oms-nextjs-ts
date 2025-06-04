@@ -6,7 +6,9 @@ export async function reserveItems(input: ReserveItemsInput): Promise<ReserveIte
     { available: true, location: 'warehouse', items: input.items }
   ];
 
-  return { reservations: reservations };
+  return {
+    reservations: reservations
+  };
 }
 
 export async function insertOrder(order: Order): Promise<Order> {
@@ -20,10 +22,21 @@ export async function insertOrder(order: Order): Promise<Order> {
   }
   return result.rows[0] as Order;
 }
+
 export async function fetchOrders(): Promise<Order[]> {
   const result =
     await db.sql`SELECT id, customer_id, status, received_at FROM orders ORDER BY received_at DESC`;
   return result.rows as Order[];
+}
+export async function updateOrderStatus(id: string, status: string): Promise<void> {
+  const result = await db.sql`
+	UPDATE orders
+	SET status = ${status}
+	WHERE id = ${id}
+  `;
+  if (result.rowCount === 0) {
+    throw new Error(`Failed to update order status for ID: ${id}`);
+  }
 }
 
 // UpdateOrderStatus stores the Order status to the database.
