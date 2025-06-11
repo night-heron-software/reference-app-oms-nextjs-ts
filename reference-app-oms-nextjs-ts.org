@@ -467,4 +467,14 @@ Omit<Shipment, "createdAt" | "updatedAt" | "status"> &
   createdAt: Date;
   updatedAt: Date;
 }
+
+{
+  id: string; // Corresponds to ShipmentID in Go
+  orderId: string;
+  productId: string;
+  quantity: number;
+  status: ShipmentStatus;
+  createdAt: Date; // Mapped from Go's time.Time
+  updatedAt: Date; // Mapped from Go's time.Time
+}
 #+end_src

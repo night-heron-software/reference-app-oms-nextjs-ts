@@ -1,26 +1,26 @@
 'use server';
 import 'server-only';
 
-import { TASK_QUEUE_NAME } from '@/temporal/lib/shared';
-import { getTemporalClient } from '@/temporal/src/client';
-import { Order, Shipment } from '@/temporal/src/order';
-import { OrderRunStatus, getOrderStatus, processOrder } from '@/temporal/src/workflows';
+import { TASK_QUEUE_NAME } from '@/temporal/lib/order/shared';
+import { getTemporalClient } from '@/temporal/src/order/client';
+import { OrderQueryResult, Shipment } from '@/temporal/src/order/order';
+import { getOrderStatus, processOrder } from '@/temporal/src/order/workflows';
 import { sql } from '@vercel/postgres';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 
-export async function fetchOrder(id: string): Promise<Order | undefined> {
+export async function fetchOrder(id: string): Promise<OrderQueryResult | undefined> {
   const result = await sql`SELECT id, customer_id, status FROM orders WHERE id = ${id}`;
   if (result.rows.length > 0) {
-    return result.rows[0] as Order;
+    return result.rows[0] as OrderQueryResult;
   } else {
     console.error('Failed to fetch order');
     return undefined;
   }
 }
-export async function fetchOrders(): Promise<Order[]> {
+export async function fetchOrders(): Promise<OrderQueryResult[]> {
   const result = await sql`SELECT id, status, received_at FROM orders ORDER BY received_at DESC`;
-  return result.rows as Order[];
+  return result.rows as OrderQueryResult[];
 }
 /* ((formData: FormData) => void | Promise<void>) | undefined */
 export async function createOrder(formData: FormData): Promise<void> {
@@ -28,7 +28,7 @@ export async function createOrder(formData: FormData): Promise<void> {
   const formOrder = JSON.parse(formData.get('order') as string);
   console.log(JSON.stringify(formOrder, null, 2));
 
-  const orderInput: Order = {
+  const orderInput: OrderQueryResult = {
     id: formOrder.id,
     customerId: formOrder.customerId,
     items: formOrder.items,
@@ -41,7 +41,14 @@ export async function createOrder(formData: FormData): Promise<void> {
       .workflow.start(processOrder, {
         taskQueue: TASK_QUEUE_NAME,
         workflowId: orderInput.id,
-        args: [orderInput]
+        args: [orderInput],
+        retry: {
+          maximumAttempts: 4,
+          initialInterval: '10m',
+          maximumInterval: '160m',
+          backoffCoefficient: 2.0,
+          nonRetryableErrorTypes: ['NotFoundError', 'InvalidArgumentError']
+        }
       })
       .then((result) => {
         console.log('Workflow started successfully:', result);
@@ -67,7 +74,7 @@ export async function fetchShipments(): Promise<Shipment[]> {
   return result.rows as Shipment[];
 }
 
-async function insertOrder(order: Order): Promise<number> {
+async function insertOrder(order: OrderQueryResult): Promise<number> {
   const result =
     await sql`INSERT INTO orders (id, customer_id, received_at, status) VALUES (${order.id}, ${order.customerId}, ${new Date().toISOString()}, ${order.status})`;
   if (result == null) {
@@ -77,7 +84,7 @@ async function insertOrder(order: Order): Promise<number> {
   return result.rowCount == null ? 0 : result.rowCount;
 }
 
-export async function fetchOrderById(id: string): Promise<OrderRunStatus | undefined> {
+export async function fetchOrderById(id: string): Promise<OrderQueryResult | undefined> {
   const client = getTemporalClient();
 
   const handle = await client.workflow.getHandle(id);

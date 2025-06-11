@@ -2,7 +2,14 @@ import * as wf from '@temporalio/workflow';
 import { CancellationScope } from '@temporalio/workflow';
 // Import activity types for proxyActivities, assuming activities are exported as an object
 import type { activities as shipmentActivitiesType } from './activities.js';
-import { CreateShipmentParams, Shipment, SHIPMENT_SHIPPED_SIGNAL_NAME } from './interfaces.js';
+import {
+  CreateShipmentParams,
+  Shipment,
+  SHIPMENT_SHIPPED_SIGNAL_NAME,
+  ShipmentStatusUpdatedSignal
+} from './interfaces.js';
+export const shipmentStatusSignal =
+  wf.defineSignal<[ShipmentStatusUpdatedSignal]>('ShipmentStatusUpdated');
 
 // Proxy activities for use in the workflow
 const { createShipmentActivity, updateShipmentStatusActivity } = wf.proxyActivities<
@@ -59,24 +66,26 @@ export async function ShipmentWorkflow(params: CreateShipmentParams): Promise<Sh
 
     if (signalOrTimeout) {
       // Signal received before timeout
-      logger.info('Shipment shipped signal processed. Updating status to SHIPPED.', {
+      logger.info('Shipment shipped signal processed. Updating status to shipped.', {
         shipmentId: shipment.id
       });
       shipment = await updateShipmentStatusActivity({
         shipmentId: shipment.id,
-        status: 'SHIPPED'
+        status: 'shipped',
+        updatedAt: new Date() // Assuming we want to update the timestamp to now
       });
-      logger.info(`Shipment status updated to SHIPPED.`, { shipmentId: shipment.id });
+      logger.info(`Shipment status updated to shipped.`, { shipmentId: shipment.id });
     } else {
       // Timeout occurred
-      logger.warn('Shipment processing timed out. Updating status to TIMED_OUT.', {
+      logger.warn('Shipment processing timed out. Updating status to timed_out.', {
         shipmentId: shipment.id
       });
       shipment = await updateShipmentStatusActivity({
         shipmentId: shipment.id,
-        status: 'TIMED_OUT'
+        status: 'timed_out',
+        updatedAt: new Date() // Assuming we want to update the timestamp to now
       });
-      logger.warn(`Shipment status updated to TIMED_OUT.`, { shipmentId: shipment.id });
+      logger.warn(`Shipment status updated to timed_out.`, { shipmentId: shipment.id });
     }
 
     logger.info('ShipmentWorkflow completed successfully.', {
@@ -96,18 +105,19 @@ export async function ShipmentWorkflow(params: CreateShipmentParams): Promise<Sh
         // Use a non-cancellable scope for cleanup activities
         await CancellationScope.nonCancellable(async () => {
           logger.info(
-            'Attempting to update shipment status to CANCELLED due to workflow cancellation.',
+            'Attempting to update shipment status to cancelled due to workflow cancellation.',
             { shipmentId: shipment!.id }
           );
           try {
             shipment = await updateShipmentStatusActivity({
               shipmentId: shipment!.id,
-              status: 'CANCELLED'
+              status: 'cancelled',
+              updatedAt: new Date() // Assuming we want to update the timestamp to now
             });
-            logger.info('Shipment status updated to CANCELLED.', { shipmentId: shipment!.id });
+            logger.info('Shipment status updated to cancelled.', { shipmentId: shipment!.id });
           } catch (cleanupErr) {
             logger.error(
-              'Failed to update shipment status to CANCELLED during cancellation cleanup.',
+              'Failed to update shipment status to cancelled during cancellation cleanup.',
               { shipmentId: shipment!.id, error: cleanupErr }
             );
             // Log and absorb, or rethrow if critical. The workflow will still be marked as cancelled.

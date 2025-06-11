@@ -23,7 +23,7 @@ import StatusBadge from '@/components/StatusBadge';
 //   // ... other properties
 // }
 import type { Action, Order } from '@/types/order';
-import { OrderRunStatus } from '@/temporal/src/workflows';
+import { OrderQueryResult } from '@/temporal/src/order/order'; // Adjust the import path as necessary
 
 interface OrderPageProps {
   params: Promise<{ id: string }>;
@@ -34,7 +34,7 @@ export default function OrderPage(props: OrderPageProps) {
   const router = useRouter();
   const { id } = params;
 
-  const [order, setOrder] = useState<OrderRunStatus | null>(null);
+  const [order, setOrder] = useState<OrderQueryResult | null>(null);
   const [actionLoading, setActionLoading] = useState(false); // For action buttons
   const [pageLoading, setPageLoading] = useState(true); // For initial order load
 
@@ -58,52 +58,10 @@ export default function OrderPage(props: OrderPageProps) {
           setPageLoading(false);
         });
     }
-  }, [id, fetchOrderById]);
-
-  // Polling logic for order status
-  useEffect(() => {
-    if (!order || pageLoading) return;
-
-    const finalStatuses = ['completed', 'failed', 'cancelled', 'timedOut'];
-    const isFinal = order?.status && finalStatuses.includes(order.status);
-
-    if (isFinal) return; // Stop polling if status is final
-
-    const interval = setInterval(() => {
-      fetchOrderById(id);
-    }, 5000); // Poll every 5 seconds (Svelte original was 500ms)
-
-    return () => {
-      clearInterval(interval);
-    };
-  }, [order, id, fetchOrderById, pageLoading]);
+  }, []);
 
   const sendAction = async (action: Action) => {
-    setActionLoading(true);
-    try {
-      await fetch('/api/order-action', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id, action })
-      });
-
-      // Delay similar to Svelte component before navigation/refresh
-      setTimeout(() => {
-        setActionLoading(false);
-        if (action === 'cancel') {
-          router.push(`/orders`);
-          // Optionally, if /orders page needs server data refresh: router.refresh();
-        } else {
-          // For other actions, re-fetch the current order's data
-          fetchOrderById(id);
-          // Optionally, if this page relies on server data that needs refreshing: router.refresh();
-        }
-      }, 1000);
-    } catch (error) {
-      console.error(`Error sending action ${action}:`, error);
-      setActionLoading(false);
-      // Handle error (e.g., show a notification)
-    }
+    console.log(`Sending action: ${action} for order ID: ${id}`);
   };
 
   const actionRequired = useMemo(() => {
@@ -137,7 +95,6 @@ export default function OrderPage(props: OrderPageProps) {
         </p>
       );
     }
-    return null;
   };
 
   return (

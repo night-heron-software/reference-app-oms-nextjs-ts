@@ -1,4 +1,4 @@
-export type ShipmentStatus = 'PENDING' | 'SHIPPED' | 'TIMED_OUT' | 'CANCELLED';
+export type ShipmentStatus = 'pending' | 'shipped' | 'timed_out' | 'cancelled';
 
 export interface Shipment {
   id: string; // Corresponds to ShipmentID in Go
@@ -15,10 +15,12 @@ export interface CreateShipmentParams {
   productId: string;
   quantity: number;
 }
+export const ShipmentStatusUpdatedSignalName = 'ShipmentStatusUpdated';
 
-export interface UpdateShipmentStatusParams {
+export interface ShipmentStatusUpdatedSignal {
   shipmentId: string;
   status: ShipmentStatus;
+  updatedAt: Date;
 }
 
 // Constants

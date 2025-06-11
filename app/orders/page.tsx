@@ -1,7 +1,7 @@
 'use client';
 
 import { fetchOrders } from '@/actions/actions'; // Adjust the import path as necessary
-import { Order } from '@/temporal/src/order';
+import { OrderQueryResult } from '@/temporal/src/order/order';
 import type { TableColumns, TableData } from '@/types/ui'; // Adjust the import path as necessary
 import { useRouter } from 'next/navigation';
 import React, { useEffect, useState } from 'react';
@@ -20,7 +20,7 @@ export interface ColumnDefinition<TData extends Record<string, any>> {
 }
 
 function OrdersPage() {
-  const [orders, setOrders] = useState<Order[]>(); // Initialize state for orders
+  const [orders, setOrders] = useState<OrderQueryResult[]>(); // Initialize state for orders
 
   const router = useRouter();
 

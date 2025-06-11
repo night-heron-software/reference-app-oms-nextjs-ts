@@ -3,7 +3,7 @@ import { ApplicationFailure } from '@temporalio/common';
 import {
   Shipment,
   CreateShipmentParams,
-  UpdateShipmentStatusParams,
+  ShipmentStatusUpdatedSignal,
   ShipmentStatus
 } from './interfaces.js';
 
@@ -85,7 +85,7 @@ export async function createShipmentActivity(params: CreateShipmentParams): Prom
 }
 
 export async function updateShipmentStatusActivity(
-  params: UpdateShipmentStatusParams
+  params: ShipmentStatusUpdatedSignal
 ): Promise<Shipment> {
   console.log(`UpdateShipmentStatusActivity invoked with params: ${JSON.stringify(params)}`);
   const now = new Date();

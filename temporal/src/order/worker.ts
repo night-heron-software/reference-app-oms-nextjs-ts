@@ -12,8 +12,6 @@ import { createRequire } from 'node:module';
 run().catch((err) => console.log(err));
 
 async function run() {
-  console.log(`CWD: ${process.cwd()}`);
-  console.log(`env: ${JSON.stringify(process.env, null, 2)}`);
   const connection = await NativeConnection.connect({
     address: 'localhost:7233'
     // In production, pass options to configure TLS and other settings.

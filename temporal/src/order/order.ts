@@ -43,7 +43,7 @@ export interface Shipment {
   id: string;
   status: string;
   items: OrderItem[];
-  updatedAt: string;
+  updatedAt: Date;
 }
 export type PaymentStatus = 'pending' | 'success' | 'failed';
 
@@ -57,7 +57,7 @@ export interface Payment {
 
 export type Action = 'amend' | 'cancel';
 
-export interface Order {
+export interface OrderQueryResult {
   id: string;
   customerId: string;
   items: OrderItem[];

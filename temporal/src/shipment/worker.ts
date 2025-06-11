@@ -60,8 +60,7 @@ export async function runShipmentWorker(config?: ShipmentWorkerConfig): Promise<
     activities: activities, // Register the activities for this workflow
     // Match Go worker options:
     maxConcurrentWorkflowTaskPolls: config?.maxConcurrentWorkflowTaskPolls ?? 8,
-    maxConcurrentActivityTaskPolls: config?.maxConcurrentActivityPolls ?? 8, // Note: TS SDK uses 'ActivityPollers'
-    logger // Optional: use custom logger
+    maxConcurrentActivityTaskPolls: config?.maxConcurrentActivityPolls ?? 8 // Note: TS SDK uses 'ActivityPollers'
   });
 
   console.log(

@@ -10,7 +10,7 @@
     "build:next": "next build",
     "build:temporal": "tsc --build ./temporal/tsconfig.json",
     "clean:temporal": "tsc --build --clean ./temporal/tsconfig.json",
-    "start:worker": "node  --watch --env-file=.env.local ./temporal/lib/worker",
+    "start:worker": "node  --watch --env-file=.env.local ./temporal/lib/order/worker",
     "start:temporal": "temporal server start-dev --db-filename local.db",
     "start": "next start",
     "lint": "eslint ."

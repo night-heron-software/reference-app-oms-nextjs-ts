@@ -5,21 +5,22 @@ import {
   executeChild,
   proxyActivities,
   setHandler,
-  startChild
+  sleep
 } from '@temporalio/workflow';
+import * as wf from '@temporalio/workflow';
 import type * as activities from './activities.js'; // Ensure this path is correct and the module exists
 import type { ItemInput, OrderInput } from './definitions.js'; // Import Order type
-import { Fulfillment, Order, OrderItem, OrderStatus, ReserveItemsResult } from './order.js';
-import { channel } from 'node:diagnostics_channel';
+import { Fulfillment, OrderItem, OrderQueryResult, ReserveItemsResult } from './order.js'; // Adjust the import path as necessary
+import { shipmentStatusSignal } from '../shipment/workflows.js';
 
 const { reserveItems, updateOrderStatus } = proxyActivities<typeof activities>({
   retry: {
-    initialInterval: '1 second',
-    maximumInterval: '1 minute',
+    initialInterval: '1 minute',
+    maximumInterval: '16 minute',
     backoffCoefficient: 2,
     maximumAttempts: 500
   },
-  startToCloseTimeout: '1 minute'
+  startToCloseTimeout: '1 hour'
 });
 
 /* export async function buildFulfillments(order: OrderInput): Promise<ReserveItemsResult> {
@@ -33,9 +34,7 @@ const { reserveItems, updateOrderStatus } = proxyActivities<typeof activities>({
   return reserveItems({ orderId: order.id, items: orderItems });
 } */
 
-export const getOrderStatus = defineQuery<Order>('getOrderStatus');
-
-function customerActionRequired(order: Order): boolean {
+function customerActionRequired(order: OrderQueryResult): boolean {
   if (!order.fulfillments || order.fulfillments.length === 0) {
     console.log(`No fulfillments found for order: ${order.id}`);
     return false;
@@ -50,11 +49,37 @@ function customerActionRequired(order: Order): boolean {
   return false;
 }
 
-export async function processOrder(input: OrderInput): Promise<Order> {
-  const order = setupOrder(input);
+export async function processOrder(input: OrderInput): Promise<OrderQueryResult> {
+  const items: OrderItem[] = input.items.map((item: ItemInput) => {
+    if (item.sku === undefined) {
+      throw new Error('Item SKU cannot be empty');
+    }
+    if (item.quantity === undefined) {
+      throw new Error('Item quantity cannot be empty');
+    }
+    return { sku: item.sku, quantity: item.quantity };
+  });
+
+  const order: OrderQueryResult = {
+    id: input.id,
+    customerId: input.customerId,
+    items: items,
+    receivedAt: new Date().toISOString(),
+    status: 'pending' // or another appropriate default status
+  };
+
   console.log(`Order: ${JSON.stringify(order, null, 2)} created!`);
 
   setupQueryHandler(order);
+  if (input.id === undefined) {
+    throw new Error('Order ID cannot be empty');
+  }
+  if (input.customerId === undefined) {
+    throw new Error('Customer ID cannot be empty');
+  }
+  if (input.items === undefined || input.items.length === 0) {
+    throw new Error('Items cannot be empty');
+  }
 
   const reserveItemsResult = await reserveItems({ orderId: order.id, items: order.items });
 
@@ -64,19 +89,15 @@ export async function processOrder(input: OrderInput): Promise<Order> {
 
   console.log(`Reservations: ${JSON.stringify(reserveItemsResult.reservations, null, 2)}`);
 
-  const fulfillments: Fulfillment[] = reserveItemsResult.reservations.map(
-    (reservation, i): Fulfillment => {
-      const id = `${order.id}:${i + 1}`;
-      return {
-        id: input.id,
-        items: reservation.items,
-        location: reservation.location,
-        status: 'pending'
-      };
-    }
-  );
-
-  order.fulfillments = fulfillments;
+  order.fulfillments = reserveItemsResult.reservations.map((reservation, i): Fulfillment => {
+    const id = `${order.id}:${i + 1}`;
+    return {
+      id: input.id,
+      items: reservation.items,
+      location: reservation.location,
+      status: 'pending'
+    };
+  });
 
   if (customerActionRequired(order)) {
     // update order status to indicate customer action is required
@@ -100,33 +121,66 @@ export async function processOrder(input: OrderInput): Promise<Order> {
         throw new Error(`Unknown action: ${customerAction}`);
     }
   }
+
   await updateOrderStatus(order.id, 'processing');
+  const fulfillmentMap = new Map(order.fulfillments.map((f) => [f.id, f]));
 
-  const responseArray = await Promise.all(
-    order.fulfillments.map((fulfillment) =>
-      executeChild(handleShipmentStatusUpdates, {
-        args: [fulfillment]
-        // workflowId, // add business-meaningful workflow id here
-        // // regular workflow options apply here, with two additions (defaults shown):
-        // cancellationType: ChildWorkflowCancellationType.WAIT_CANCELLATION_COMPLETED,
-        // parentClosePolicy: ParentClosePolicy.PARENT_CLOSE_POLICY_TERMINATE
-      })
-    )
-  );
+  wf.setHandler(shipmentStatusSignal, ({ shipmentId, status, updatedAt }) => {
+    console.log(`Shipment status updated: ${shipmentId}, ${status}, ${updatedAt}`);
+    // You can handle the shipment status update here if needed
+    const fulfillment = fulfillmentMap.get(shipmentId);
+
+    if (fulfillment) {
+      fulfillment.shipment = {
+        id: shipmentId,
+        status: status,
+        items: fulfillment.items,
+        updatedAt: updatedAt
+      };
+      console.log(`Shipment status updated for ${shipmentId}: ${status}`);
+    } else {
+      console.warn(`No fulfillment found for shipment ID: ${shipmentId}`);
+    }
+  });
   // you can use childHandle to signal, query, cancel, terminate, or get result here
-
+  await sleep('1 hour'); // Simulate some processing time
   console.log(`order: ${JSON.stringify(order, null, 2)}`);
   return order;
 }
 
-export async function handleShipmentStatusUpdates(fulfillment: Fulfillment): Promise<string> {
-  const ch = channel('ShipmentStatusUpdated');
+/* const shipmentStatusSignal = defineSignal<[string, string, string]>('ShipmentStatusUpdated');
+
+export async function handleShipmentStatusUpdates(fulfillments: Fulfillment[]): Promise<string> {
+  const fulfillmentMap = new Map(fulfillments.map((f) => [f.id, f]));
+
+
+
+  if (!ch) {
+    throw new Error('Channel "ShipmentStatusUpdated" not found');
+  }
+  ch.ch.subscribe((message, signal) => {
+    const { shipmentId, status, updatedAt } = signal;
+    const fulfillment = fulfillmentMap.get(shipmentId);
+    if (fulfillment) {
+      fulfillment.status = status;
+      fulfillment.shipment = {
+        id: shipmentId,
+        status: status,
+        items: fulfillment.items,
+        updatedAt: updatedAt
+      };
+      console.log(`Shipment status updated for ${shipmentId}: ${status}`);
+    } else {
+      console.warn(`No fulfillment found for shipment ID: ${shipmentId}`);
+    }
+  });
+
   console.log(`Child workflow started with name: ${fulfillment}`);
   // Simulate some work in the child workflow
   await new Promise((resolve) => setTimeout(resolve, 1000));
   console.log(`Child workflow completed with name: ${fulfillment}`);
   return `Child workflow result for ${fulfillment}`;
-}
+} */
 
 /* func (wf *orderImpl) handleShipmentStatusUpdates(ctx workflow.Context) {
 	ch := workflow.GetSignalChannel(ctx, shipment.ShipmentStatusUpdatedSignalName)
@@ -146,7 +200,7 @@ export async function handleShipmentStatusUpdates(fulfillment: Fulfillment): Pro
 		}
 	}
 } */
-function cancelUnavailableFulfillments(order: Order): void {
+function cancelUnavailableFulfillments(order: OrderQueryResult): void {
   order.fulfillments?.forEach((fulfillment) => {
     if (fulfillment.status === 'unavailable') {
       fulfillment.status = 'cancelled'; // Update status to 'cancelled'
@@ -158,7 +212,7 @@ function cancelUnavailableFulfillments(order: Order): void {
   // You might want to call an activity to update the order status in the database here
 }
 
-function cancelAllFulfillments(order: Order): void {
+function cancelAllFulfillments(order: OrderQueryResult): void {
   order.fulfillments?.forEach((fulfillment) => {
     fulfillment.status = 'cancelled'; // Update each fulfillment status to 'cancelled'
   });
@@ -168,42 +222,13 @@ function cancelAllFulfillments(order: Order): void {
   // You might want to call an activity to update the order status in the database here
 }
 
-function setupOrder(input: OrderInput): Order {
-  if (input.id === undefined) {
-    throw new Error('Order ID cannot be empty');
-  }
-  if (input.customerId === undefined) {
-    throw new Error('Customer ID cannot be empty');
-  }
-  if (input.items === undefined || input.items.length === 0) {
-    throw new Error('Items cannot be empty');
-  }
-  const items: OrderItem[] = input.items.map((item: ItemInput) => {
-    if (item.sku === undefined) {
-      throw new Error('Item SKU cannot be empty');
-    }
-    if (item.quantity === undefined) {
-      throw new Error('Item quantity cannot be empty');
-    }
-    return { sku: item.sku, quantity: item.quantity };
-  });
-
-  const order: Order = {
-    id: input.id,
-    customerId: input.customerId,
-    items: items,
-    receivedAt: new Date().toISOString(),
-    status: 'pending' // or another appropriate default status
-  };
-
-  return order;
-}
-
 function reservationsFound(reserveItemsResult: ReserveItemsResult): boolean {
   return !!reserveItemsResult?.reservations?.length;
 }
+// How should this be made available to the client?
+export const getOrderStatus = defineQuery<OrderQueryResult>('getOrderStatus');
 
-function setupQueryHandler(order: Order) {
+function setupQueryHandler(order: OrderQueryResult) {
   setHandler(getOrderStatus, () => {
     console.log(`getOrderStatus called for order: ${order.id}`);
     return order;
@@ -211,7 +236,7 @@ function setupQueryHandler(order: Order) {
 }
 export const customerActionSignal = defineSignal<[string]>('customerAction');
 
-async function waitForCustomer(order: Order): Promise<string> {
+async function waitForCustomer(order: OrderQueryResult): Promise<string> {
   let signalReceived = false;
   let signalValue: string | undefined;
 
