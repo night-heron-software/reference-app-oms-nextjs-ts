@@ -41,7 +41,7 @@ const dbClient: DbClient = {
       orderId: 'mock-order-id', // This would come from the fetched record
       productId: 'mock-product-id', // This would come from the fetched record
       quantity: 1, // This would come from the fetched record
-      status: 'PENDING', // Old status
+      status: 'pending', // Old status
       createdAt: new Date(Date.now() - 100000), // This would come from the fetched record
       updatedAt: new Date(Date.now() - 100000) // This would come from the fetched record
     };

@@ -32,6 +32,8 @@ export type FulfillmentStatus =
   | 'failed';
 
 export interface Fulfillment {
+  orderId: string;
+  customerId: string;
   id: string;
   shipment?: Shipment;
   items: OrderItem[];
@@ -39,12 +41,14 @@ export interface Fulfillment {
   location: string;
   status?: FulfillmentStatus;
 }
+
 export interface Shipment {
   id: string;
   status: string;
   items: OrderItem[];
   updatedAt: Date;
 }
+
 export type PaymentStatus = 'pending' | 'success' | 'failed';
 
 export interface Payment {
@@ -65,14 +69,6 @@ export interface OrderQueryResult {
   fulfillments?: Fulfillment[];
   status: OrderStatus;
 }
-/* export interface OrderRunStatus {
-  id: string;
-  customerId: string;
-  receivedAt: string;
-  items: OrderItem[];
-  fulfillments?: Fulfillment[];
-  status: string;
-} */
 
 export interface ReserveItemsInput {
   orderId: string;

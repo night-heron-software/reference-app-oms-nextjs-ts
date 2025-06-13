@@ -478,3 +478,10 @@ Omit<Shipment, "createdAt" | "updatedAt" | "status"> &
   updatedAt: Date; // Mapped from Go's time.Time
 }
 #+end_src
+
+#+begin_src shell-script
+temporal workflow signal \
+         --workflow-id 'A1-1749674719128' \
+         --name 'ShipmentStatusUpdated' \
+         --input '{"shipmentId": "A1-1749674719128", "status": "shipped", "updatedAt": "2025-06-11T20:57:07.939Z"}'
+#+end_src

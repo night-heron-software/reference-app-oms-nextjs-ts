@@ -48,7 +48,9 @@ export async function createOrder(formData: FormData): Promise<void> {
           maximumInterval: '160m',
           backoffCoefficient: 2.0,
           nonRetryableErrorTypes: ['NotFoundError', 'InvalidArgumentError']
-        }
+        },
+        workflowExecutionTimeout: '2hr',
+        workflowTaskTimeout: '2hr'
       })
       .then((result) => {
         console.log('Workflow started successfully:', result);
@@ -93,7 +95,7 @@ export async function fetchOrderById(id: string): Promise<OrderQueryResult | und
     console.log(`Fetched order: ${JSON.stringify(orderStatus, null, 2)}`);
     return orderStatus;
   } catch (error) {
-    console.error(`Error fetching order by ID ${id}:`, error);
+    console.warn(`Error fetching order by ID ${id}:`, error);
     return undefined;
   }
 }

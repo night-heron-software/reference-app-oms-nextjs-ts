@@ -1,17 +1,27 @@
+import * as wf from '@temporalio/workflow';
 import {
   condition,
   defineQuery,
   defineSignal,
-  executeChild,
   proxyActivities,
   setHandler,
   sleep
 } from '@temporalio/workflow';
-import * as wf from '@temporalio/workflow';
 import type * as activities from './activities.js'; // Ensure this path is correct and the module exists
 import type { ItemInput, OrderInput } from './definitions.js'; // Import Order type
 import { Fulfillment, OrderItem, OrderQueryResult, ReserveItemsResult } from './order.js'; // Adjust the import path as necessary
-import { shipmentStatusSignal } from '../shipment/workflows.js';
+
+export const ShipmentStatusUpdatedSignalName = 'ShipmentStatusUpdated';
+
+export type ShipmentStatus = 'pending' | 'shipped' | 'timed_out' | 'cancelled';
+export interface ShipmentStatusUpdatedSignal {
+  shipmentId: string;
+  status: ShipmentStatus;
+  updatedAt: Date;
+}
+
+export const shipmentStatusSignal =
+  wf.defineSignal<[ShipmentStatusUpdatedSignal]>('ShipmentStatusUpdated');
 
 const { reserveItems, updateOrderStatus } = proxyActivities<typeof activities>({
   retry: {
@@ -20,7 +30,7 @@ const { reserveItems, updateOrderStatus } = proxyActivities<typeof activities>({
     backoffCoefficient: 2,
     maximumAttempts: 500
   },
-  startToCloseTimeout: '1 hour'
+  startToCloseTimeout: '2 hours'
 });
 
 /* export async function buildFulfillments(order: OrderInput): Promise<ReserveItemsResult> {
@@ -92,7 +102,9 @@ export async function processOrder(input: OrderInput): Promise<OrderQueryResult>
   order.fulfillments = reserveItemsResult.reservations.map((reservation, i): Fulfillment => {
     const id = `${order.id}:${i + 1}`;
     return {
-      id: input.id,
+      orderId: order.id,
+      customerId: order.customerId,
+      id: id,
       items: reservation.items,
       location: reservation.location,
       status: 'pending'
@@ -123,6 +135,7 @@ export async function processOrder(input: OrderInput): Promise<OrderQueryResult>
   }
 
   await updateOrderStatus(order.id, 'processing');
+
   const fulfillmentMap = new Map(order.fulfillments.map((f) => [f.id, f]));
 
   wf.setHandler(shipmentStatusSignal, ({ shipmentId, status, updatedAt }) => {
@@ -142,10 +155,36 @@ export async function processOrder(input: OrderInput): Promise<OrderQueryResult>
       console.warn(`No fulfillment found for shipment ID: ${shipmentId}`);
     }
   });
+
+  const fulfillmentResults = order.fulfillments.map((fulfillment) => {
+    console.log(`Starting fulfillment workflow for: ${fulfillment.id}`);
+    return wf.executeChild(processFulfillment, {
+      args: [fulfillment],
+      taskQueue: 'orders',
+      workflowId: `fulfillment-${fulfillment.id}`,
+      workflowExecutionTimeout: '10m'
+    });
+  });
+
+  await Promise.all(fulfillmentResults)
+    .then((results) => {
+      console.log(`Fulfillment results: ${JSON.stringify(results, null, 2)}`);
+    })
+    .catch((error) => {
+      console.error(`Error processing fulfillments for order ${order.id}:`, error);
+      // Handle any errors that occurred during fulfillment processing
+    });
+
   // you can use childHandle to signal, query, cancel, terminate, or get result here
-  await sleep('1 hour'); // Simulate some processing time
+  await sleep('5 minutes'); // Simulate some processing time
   console.log(`order: ${JSON.stringify(order, null, 2)}`);
   return order;
+}
+
+export async function processFulfillment(fulfillment: Fulfillment): Promise<string> {
+  console.log(`Processing fulfillment: ${fulfillment.id}`);
+  await sleep('1 minutes'); // Simulate some processing time
+  return 'Fulfillment processed successfully';
 }
 
 /* const shipmentStatusSignal = defineSignal<[string, string, string]>('ShipmentStatusUpdated');
