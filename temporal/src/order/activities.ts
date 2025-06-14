@@ -1,13 +1,16 @@
+import { log } from '@temporalio/activity';
 import { db } from '@vercel/postgres';
 import {
-  OrderQueryResult,
   OrderItem,
+  OrderQueryResult,
   Reservation,
   ReserveItemsInput,
   ReserveItemsResult
 } from './order.js';
 
 export async function reserveItems(input: ReserveItemsInput): Promise<ReserveItemsResult> {
+  log.info(`reserveItems: ${JSON.stringify(input, null, 2)}`);
+
   if (!input.items || input.items.length < 1) {
     throw new Error('Items cannot be empty');
   }
@@ -94,33 +97,3 @@ export async function updateOrderStatus(id: string, status: string): Promise<voi
     throw new Error(`Failed to update order status for ID: ${id}`);
   }
 }
-
-// UpdateOrderStatus stores the Order status to the database.
-/* 
-func (a *Activities) UpdateOrderStatus(ctx context.Context, status *OrderStatusUpdate) error {
-	jsonInput, err := json.Marshal(status)
-	if err != nil {
-		return fmt.Errorf("unable to encode status: %w", err)
-	}
-
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, a.OrderURL+"/orders/"+status.ID+"/status", bytes.NewReader(jsonInput))
-	if err != nil {
-		return fmt.Errorf("unable to build request: %w", err)
-	}
-
-	req.Header.Set("Content-Type", "application/json")
-
-	res, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return err
-	}
-	defer res.Body.Close()
-
-	if res.StatusCode < 200 || res.StatusCode >= 300 {
-		body, _ := io.ReadAll(res.Body)
-		return fmt.Errorf("%s: %s", http.StatusText(res.StatusCode), body)
-	}
-
-	return nil
-}
- */

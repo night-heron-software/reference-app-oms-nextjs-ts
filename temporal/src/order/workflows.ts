@@ -1,12 +1,7 @@
 import * as wf from '@temporalio/workflow';
-import {
-  condition,
-  defineQuery,
-  defineSignal,
-  proxyActivities,
-  setHandler,
-  sleep
-} from '@temporalio/workflow';
+
+import { log } from '@temporalio/workflow';
+
 import type * as activities from './activities.js'; // Ensure this path is correct and the module exists
 import type { ItemInput, OrderInput } from './definitions.js'; // Import Order type
 import { Fulfillment, OrderItem, OrderQueryResult, ReserveItemsResult } from './order.js'; // Adjust the import path as necessary
@@ -23,7 +18,7 @@ export interface ShipmentStatusUpdatedSignal {
 export const shipmentStatusSignal =
   wf.defineSignal<[ShipmentStatusUpdatedSignal]>('ShipmentStatusUpdated');
 
-const { reserveItems, updateOrderStatus } = proxyActivities<typeof activities>({
+const { reserveItems, updateOrderStatus } = wf.proxyActivities<typeof activities>({
   retry: {
     initialInterval: '1 minute',
     maximumInterval: '16 minute',
@@ -33,26 +28,15 @@ const { reserveItems, updateOrderStatus } = proxyActivities<typeof activities>({
   startToCloseTimeout: '2 hours'
 });
 
-/* export async function buildFulfillments(order: OrderInput): Promise<ReserveItemsResult> {
-  const orderItems: OrderItem[] = order.items.map((item: ItemInput) => {
-    if (item.quantity === undefined) {
-      throw new Error('Item quantity cannot be undefined');
-    }
-    return { sku: item.sku, quantity: item.quantity };
-  });
-  // return fulfillments not ReserveItemsResult;
-  return reserveItems({ orderId: order.id, items: orderItems });
-} */
-
 function customerActionRequired(order: OrderQueryResult): boolean {
   if (!order.fulfillments || order.fulfillments.length === 0) {
-    console.log(`No fulfillments found for order: ${order.id}`);
+    log.info(`No fulfillments found for order: ${order.id}`);
     return false;
   }
 
   for (const fulfillment of order.fulfillments) {
     if (fulfillment.status === 'unavailable') {
-      console.log(`Customer action required for fulfillment: ${fulfillment.id}`);
+      log.info(`Customer action required for fulfillment: ${fulfillment.id}`);
       return true; // Customer action is required
     }
   }
@@ -78,7 +62,7 @@ export async function processOrder(input: OrderInput): Promise<OrderQueryResult>
     status: 'pending' // or another appropriate default status
   };
 
-  console.log(`Order: ${JSON.stringify(order, null, 2)} created!`);
+  log.info(`Order: ${JSON.stringify(order, null, 2)} created!`);
 
   setupQueryHandler(order);
   if (input.id === undefined) {
@@ -97,7 +81,7 @@ export async function processOrder(input: OrderInput): Promise<OrderQueryResult>
     throw new Error('No reservations found for the order');
   }
 
-  console.log(`Reservations: ${JSON.stringify(reserveItemsResult.reservations, null, 2)}`);
+  log.info(`Reservations: ${JSON.stringify(reserveItemsResult.reservations, null, 2)}`);
 
   order.fulfillments = reserveItemsResult.reservations.map((reservation, i): Fulfillment => {
     const id = `${order.id}:${i + 1}`;
@@ -117,7 +101,7 @@ export async function processOrder(input: OrderInput): Promise<OrderQueryResult>
 
     const customerAction = await waitForCustomer(order);
 
-    console.log(`Customer action taken: ${customerAction}`);
+    log.info(`Customer action taken: ${customerAction}`);
     switch (customerAction) {
       case 'amend':
         cancelUnavailableFulfillments(order);
@@ -129,7 +113,7 @@ export async function processOrder(input: OrderInput): Promise<OrderQueryResult>
         cancelAllFulfillments(order);
         return order; // Handle timeout action
       default:
-        console.log(`Unknown action taken by customer: ${customerAction}`);
+        log.info(`Unknown action taken by customer: ${customerAction}`);
         throw new Error(`Unknown action: ${customerAction}`);
     }
   }
@@ -139,7 +123,7 @@ export async function processOrder(input: OrderInput): Promise<OrderQueryResult>
   const fulfillmentMap = new Map(order.fulfillments.map((f) => [f.id, f]));
 
   wf.setHandler(shipmentStatusSignal, ({ shipmentId, status, updatedAt }) => {
-    console.log(`Shipment status updated: ${shipmentId}, ${status}, ${updatedAt}`);
+    log.info(`Shipment status updated: ${shipmentId}, ${status}, ${updatedAt}`);
     // You can handle the shipment status update here if needed
     const fulfillment = fulfillmentMap.get(shipmentId);
 
@@ -150,14 +134,29 @@ export async function processOrder(input: OrderInput): Promise<OrderQueryResult>
         items: fulfillment.items,
         updatedAt: updatedAt
       };
-      console.log(`Shipment status updated for ${shipmentId}: ${status}`);
+      log.info(`Shipment status updated for ${shipmentId}: ${status}`);
     } else {
       console.warn(`No fulfillment found for shipment ID: ${shipmentId}`);
     }
   });
 
+  await runFulfillments(order);
+
+  // you can use childHandle to signal, query, cancel, terminate, or get result here
+  await wf.sleep('5 minutes'); // Simulate some processing time
+  log.info(`order: ${JSON.stringify(order, null, 2)}`);
+  await updateOrderStatus(order.id, 'completed');
+  return order;
+}
+
+async function runFulfillments(order: OrderQueryResult) {
+  if (!order?.fulfillments?.[0]) {
+    log.warning('No fulfillments to run');
+    return;
+  }
+
   const fulfillmentResults = order.fulfillments.map((fulfillment) => {
-    console.log(`Starting fulfillment workflow for: ${fulfillment.id}`);
+    log.info(`Starting fulfillment workflow for: ${fulfillment.id}`);
     return wf.executeChild(processFulfillment, {
       args: [fulfillment],
       taskQueue: 'orders',
@@ -168,23 +167,16 @@ export async function processOrder(input: OrderInput): Promise<OrderQueryResult>
 
   await Promise.all(fulfillmentResults)
     .then((results) => {
-      console.log(`Fulfillment results: ${JSON.stringify(results, null, 2)}`);
+      log.info(`Fulfillment results: ${JSON.stringify(results, null, 2)}`);
     })
     .catch((error) => {
       console.error(`Error processing fulfillments for order ${order.id}:`, error);
-      // Handle any errors that occurred during fulfillment processing
     });
-
-  // you can use childHandle to signal, query, cancel, terminate, or get result here
-  await sleep('5 minutes'); // Simulate some processing time
-  console.log(`order: ${JSON.stringify(order, null, 2)}`);
-  await updateOrderStatus(order.id, 'completed');
-  return order;
 }
 
 export async function processFulfillment(fulfillment: Fulfillment): Promise<string> {
-  console.log(`Processing fulfillment: ${fulfillment.id}`);
-  await sleep('1 minutes'); // Simulate some processing time
+  log.info(`Processing fulfillment: ${fulfillment.id}`);
+  await wf.sleep('1 minutes'); // Simulate some processing time
   return 'Fulfillment processed successfully';
 }
 
@@ -209,16 +201,16 @@ export async function handleShipmentStatusUpdates(fulfillments: Fulfillment[]): 
         items: fulfillment.items,
         updatedAt: updatedAt
       };
-      console.log(`Shipment status updated for ${shipmentId}: ${status}`);
+      log.info(`Shipment status updated for ${shipmentId}: ${status}`);
     } else {
       console.warn(`No fulfillment found for shipment ID: ${shipmentId}`);
     }
   });
 
-  console.log(`Child workflow started with name: ${fulfillment}`);
+  log.info(`Child workflow started with name: ${fulfillment}`);
   // Simulate some work in the child workflow
   await new Promise((resolve) => setTimeout(resolve, 1000));
-  console.log(`Child workflow completed with name: ${fulfillment}`);
+  log.info(`Child workflow completed with name: ${fulfillment}`);
   return `Child workflow result for ${fulfillment}`;
 } */
 
@@ -233,7 +225,7 @@ export async function handleShipmentStatusUpdates(fulfillments: Fulfillment[]): 
 				f.Shipment.Status = signal.Status
 				f.Shipment.UpdatedAt = signal.UpdatedAt
 
-				wf.logger.Info("Shipment status updated", "shipmentID", signal.ShipmentID, "status", signal.Status)
+				log.infoger.Info("Shipment status updated", "shipmentID", signal.ShipmentID, "status", signal.Status)
 
 				break
 			}
@@ -244,11 +236,11 @@ function cancelUnavailableFulfillments(order: OrderQueryResult): void {
   order.fulfillments?.forEach((fulfillment) => {
     if (fulfillment.status === 'unavailable') {
       fulfillment.status = 'cancelled'; // Update status to 'cancelled'
-      console.log(`Fulfillment ${fulfillment.id} has been cancelled due to unavailability.`);
+      log.info(`Fulfillment ${fulfillment.id} has been cancelled due to unavailability.`);
     }
   });
 
-  console.log(`Order ${order.id} has been amended due to unavailable fulfillments.`);
+  log.info(`Order ${order.id} has been amended due to unavailable fulfillments.`);
   // You might want to call an activity to update the order status in the database here
 }
 
@@ -257,7 +249,7 @@ function cancelAllFulfillments(order: OrderQueryResult): void {
     fulfillment.status = 'cancelled'; // Update each fulfillment status to 'cancelled'
   });
   order.status = 'cancelled'; // Update the order status to 'cancelled'
-  console.log(`All fulfillments for order ${order.id} have been cancelled.`);
+  log.info(`All fulfillments for order ${order.id} have been cancelled.`);
   // Do I need to update the database or notify any services about this cancellation?
   // You might want to call an activity to update the order status in the database here
 }
@@ -266,15 +258,15 @@ function reservationsFound(reserveItemsResult: ReserveItemsResult): boolean {
   return !!reserveItemsResult?.reservations?.length;
 }
 // How should this be made available to the client?
-export const getOrderStatus = defineQuery<OrderQueryResult>('getOrderStatus');
+export const getOrderStatus = wf.defineQuery<OrderQueryResult>('getOrderStatus');
 
 function setupQueryHandler(order: OrderQueryResult) {
-  setHandler(getOrderStatus, () => {
-    console.log(`getOrderStatus called for order: ${order.id}`);
+  wf.setHandler(getOrderStatus, () => {
+    log.info(`getOrderStatus called for order: ${order.id}`);
     return order;
   });
 }
-export const customerActionSignal = defineSignal<[string]>('customerAction');
+export const customerActionSignal = wf.defineSignal<[string]>('customerAction');
 
 async function waitForCustomer(order: OrderQueryResult): Promise<string> {
   let signalReceived = false;
@@ -287,12 +279,12 @@ async function waitForCustomer(order: OrderQueryResult): Promise<string> {
     }
   }, 30000); // 30 seconds timeout
 
-  setHandler(customerActionSignal, (value) => {
+  wf.setHandler(customerActionSignal, (value) => {
     signalReceived = true;
     signalValue = value;
   });
 
-  await condition(() => signalReceived);
+  await wf.condition(() => signalReceived);
   return signalValue || 'noActionTaken';
 }
 
@@ -311,7 +303,7 @@ async function waitForCustomer(order: OrderQueryResult): Promise<string> {
 			return
 		}
 
-		wf.logger.Info("Timed out waiting for customer action", "timeout", customerActionTimeout)
+		log.infoger.Info("Timed out waiting for customer action", "timeout", customerActionTimeout)
 
 		signal.Action = CustomerActionTimedOut
 	})
@@ -320,12 +312,12 @@ async function waitForCustomer(order: OrderQueryResult): Promise<string> {
 	s.AddReceive(ch, func(c workflow.ReceiveChannel, _ bool) {
 		c.Receive(ctx, &signal)
 
-		wf.logger.Info("Received customer action", "action", signal.Action)
+		log.infoger.Info("Received customer action", "action", signal.Action)
 
 		cancelTimer()
 	})
 
-	wf.logger.Info("Waiting for customer action")
+	log.infoger.Info("Waiting for customer action")
 
 	s.Select(ctx)
 
