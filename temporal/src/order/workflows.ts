@@ -178,6 +178,7 @@ export async function processOrder(input: OrderInput): Promise<OrderQueryResult>
   // you can use childHandle to signal, query, cancel, terminate, or get result here
   await sleep('5 minutes'); // Simulate some processing time
   console.log(`order: ${JSON.stringify(order, null, 2)}`);
+  await updateOrderStatus(order.id, 'completed');
   return order;
 }
 
