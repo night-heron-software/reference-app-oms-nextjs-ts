@@ -1,23 +1,12 @@
 'use client';
-import { generateOrders, type Order, type OrderItem } from '@/src/types/order';
+import { generateOrders, type Order, type OrderItem } from '@/types/order';
 import { createOrder } from '@/actions/actions'; // Adjust the import path as necessary
 import Button from '@/components/Button';
-/*import { enhance } from '$app/forms';
-import { goto } from '$app/navigation';*/
 import ItemDetails from '@/components/ItemDetails';
 import Card from '@/components/Card';
 import Heading from '@/components/Heading';
 import { useState } from 'react';
 
-/* {#snippet orderDetails(item: OrderItem)}
-	<Card>
-		<ItemDetails items={[item]} />
-		{#snippet actionButtons()}
-			<div className="text-xs text-gray-600/80 px-4">{item.description}</div>
-		{/snippet}
-	</Card>
-{/snippet}
- */
 export default function NewOrder() {
   const orders = generateOrders(20);
   const [order, setOrder] = useState(orders[0]);

@@ -1,13 +1,13 @@
 'use server';
 import 'server-only';
 
-import { TASK_QUEUE_NAME } from '@/temporal/lib/order/shared';
-import { getTemporalClient } from '@/temporal/src/order/client';
-import { OrderQueryResult, Shipment } from '@/temporal/src/order/order';
-import { getOrderStatus, processOrder } from '@/temporal/src/order/workflows';
+import { getTemporalClient, OrderQueryResult, Shipment } from './client';
 import { sql } from '@vercel/postgres';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
+import { defineQuery } from '@temporalio/workflow';
+
+const getOrderStatus = defineQuery<OrderQueryResult>('getOrderStatus');
 
 export async function fetchOrder(id: string): Promise<OrderQueryResult | undefined> {
   const result = await sql`SELECT id, customer_id, status FROM orders WHERE id = ${id}`;
@@ -24,6 +24,7 @@ export async function fetchOrders(): Promise<OrderQueryResult[]> {
 }
 /* ((formData: FormData) => void | Promise<void>) | undefined */
 export async function createOrder(formData: FormData): Promise<void> {
+  const client = await getTemporalClient();
   console.log(JSON.stringify(Object.fromEntries(formData.entries()), null, 2));
   const formOrder = JSON.parse(formData.get('order') as string);
   console.log(JSON.stringify(formOrder, null, 2));
@@ -37,9 +38,9 @@ export async function createOrder(formData: FormData): Promise<void> {
   };
 
   const result = await new Promise((resolve, reject) => {
-    getTemporalClient()
-      .workflow.start(processOrder, {
-        taskQueue: TASK_QUEUE_NAME,
+    client.workflow
+      .start('processOrder', {
+        taskQueue: 'orders',
         workflowId: orderInput.id,
         args: [orderInput],
         retry: {
@@ -87,9 +88,9 @@ async function insertOrder(order: OrderQueryResult): Promise<number> {
 }
 
 export async function fetchOrderById(id: string): Promise<OrderQueryResult | undefined> {
-  const client = getTemporalClient();
+  const client = await getTemporalClient();
 
-  const handle = await client.workflow.getHandle(id);
+  const handle = client.workflow.getHandle(id);
   try {
     const orderStatus = await handle.query(getOrderStatus);
     console.log(`Fetched order: ${JSON.stringify(orderStatus, null, 2)}`);
