@@ -1,4 +1,3 @@
-import { log } from '@temporalio/activity';
 import {
   ChargeCustomerInput,
   ChargeCustomerResult,
