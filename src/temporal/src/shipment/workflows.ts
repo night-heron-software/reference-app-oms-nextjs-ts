@@ -86,9 +86,10 @@ export async function ship(input: ShipmentInput): Promise<ShipmentResult> {
     items: input.items
   });
 
-  await updateShipmentStatus(input.id, 'booked');
+  await updateStatus(shipmentContext, 'booked');
 
-  wf.setHandler(shipmentCarrierUpdateSignal, ({ status }) => {
+  wf.setHandler(shipmentCarrierUpdateSignal, (parms) => {
+    const status = parms.status;
     log.info(`Shipment status updated: ${status}`);
     shipmentContext.status = status as Status;
     shipmentContext.updatedAt = Temporal.Now.toString();

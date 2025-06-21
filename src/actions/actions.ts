@@ -5,7 +5,7 @@ import { getTemporalClient, OrderQueryResult, Shipment, ShipmentStatus } from '.
 import { sql } from '@vercel/postgres';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
-import { defineQuery } from '@temporalio/workflow';
+import { defineQuery, defineSignal } from '@temporalio/workflow';
 
 const getOrderStatus = defineQuery<OrderQueryResult>('getOrderStatus');
 
@@ -115,6 +115,14 @@ export async function fetchShipmentById(id: string): Promise<ShipmentStatus | un
     return undefined;
   }
 }
+export interface ShipmentCarrierUpdateSignal {
+  status: string;
+}
+
+const shipmentCarrierUpdateSignal = defineSignal<[ShipmentCarrierUpdateSignal]>(
+  'ShipmentCarrierUpdateSignalName'
+);
+
 export async function updateShipmentCarrierStatus(
   shipmentId: string,
   workflowId: string,
@@ -123,7 +131,7 @@ export async function updateShipmentCarrierStatus(
   const client = await getTemporalClient();
   const handle = client.workflow.getHandle(workflowId);
   try {
-    await handle.signal('ShipmentCarrierUpdateSignalName', workflowId, { status: status });
+    await handle.signal(shipmentCarrierUpdateSignal, { status: status });
   } catch (error) {
     console.warn(`Error updating shipment carrier status for ${shipmentId}:`, error);
   }

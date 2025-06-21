@@ -62,7 +62,7 @@ interface ShipmentDetailPageProps {
 
 export default function ShipmentDetailPage(props: ShipmentDetailPageProps) {
   const params = use(props.params);
-  const { id } = params;
+  const id = decodeURIComponent(params.id);
 
   const [shipment, setShipment] = useState<ShipmentStatus | null>(null);
   const [pageLoading, setPageLoading] = useState(true);

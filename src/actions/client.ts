@@ -1,9 +1,8 @@
 'use server';
 'use strict';
 
-import 'server-only';
 import { Client, Connection } from '@temporalio/client';
-import { defineQuery } from '@temporalio/workflow';
+import 'server-only';
 export type ItemInput = {
   sku: string;
   quantity?: number;
