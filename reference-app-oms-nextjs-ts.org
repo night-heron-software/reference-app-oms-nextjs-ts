@@ -490,3 +490,26 @@ temporal workflow signal \
 * Walkthrough Notes
 
 **
+
+
+#+begin_src shell-script
+temporal workflow signal \
+         --workflow-id 'ship-A1-1750460272989:1' \
+         --name 'ShipmentCarrierUpdateSignalName' \
+         --input '{"status":"delivered"}'
+
+#+end_src
+
+#+begin_src shell-script
+temporal workflow signal \
+         --workflow-id 'ship-A2-1750468019881:1' \
+         --name 'ShipmentCarrierUpdateSignalName' \
+         --input '{"status":"delivered"}'
+#+end_src
+
+#+begin_src shell-script
+temporal workflow signal \
+         --workflow-id 'ship-A2-1750468019881:2' \
+         --name 'ShipmentCarrierUpdateSignalName' \
+         --input '{"status":"delivered"}'
+#+end_src

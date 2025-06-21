@@ -1,15 +1,8 @@
 import * as wf from '@temporalio/workflow';
 
-import {
-  condition,
-  executeChild,
-  getExternalWorkflowHandle,
-  log,
-  uuid4
-} from '@temporalio/workflow';
 import { Temporal } from '@js-temporal/polyfill';
+import { getExternalWorkflowHandle, log } from '@temporalio/workflow';
 import * as activities from './activities.js'; // Ensure this path is correct and the module exists
-export const ShipmentStatusUpdatedSignalName = 'ShipmentStatusUpdated';
 import {
   ShipmentCarrierUpdateSignal,
   ShipmentInput,
@@ -17,6 +10,7 @@ import {
   ShipmentStatus,
   Status
 } from './definitions.js';
+export const ShipmentStatusUpdatedSignalName = 'ShipmentStatusUpdated';
 
 const getShipmentStatus = wf.defineQuery<ShipmentStatus>('getShipmentStatus');
 
@@ -37,7 +31,31 @@ interface ShipmentContext {
   updatedAt: string;
 }
 
-export async function processShipment(input: ShipmentInput): Promise<ShipmentResult> {
+//const ShipmentStatusUpdatedSignalName = 'ShipmentStatusUpdated';
+export interface ShipmentStatusUpdatedSignal {
+  shipmentId: string;
+  status: Status;
+  updatedAt: string;
+}
+
+export const shipmentCarrierUpdateSignal = wf.defineSignal<[ShipmentCarrierUpdateSignal]>(
+  'ShipmentCarrierUpdateSignalName'
+);
+
+async function updateStatus(shipmentContext: ShipmentContext, status: Status): Promise<void> {
+  shipmentContext.status = status;
+  shipmentContext.updatedAt = Temporal.Now.toString();
+  updateShipmentStatus(shipmentContext.id, status);
+  const handle = getExternalWorkflowHandle(shipmentContext.requestorWorkflowId);
+  await handle.signal(ShipmentStatusUpdatedSignalName, {
+    shipmentId: shipmentContext.id,
+    status: status,
+    updatedAt: shipmentContext.updatedAt
+  } as ShipmentStatusUpdatedSignal);
+}
+
+export async function ship(input: ShipmentInput): Promise<ShipmentResult> {
+  log.info(`ship: ${JSON.stringify(input, null, 2)}`);
   if (!input?.id) {
     throw new Error('Order ID cannot be empty');
   }
@@ -77,28 +95,7 @@ export async function processShipment(input: ShipmentInput): Promise<ShipmentRes
   });
 
   await wf.condition(() => shipmentContext.status === 'delivered');
+  log.info('shipment delivered');
 
   return bookShipmentResult;
-}
-//const ShipmentStatusUpdatedSignalName = 'ShipmentStatusUpdated';
-export interface ShipmentStatusUpdatedSignal {
-  shipmentId: string;
-  status: Status;
-  updatedAt: string;
-}
-
-export const shipmentCarrierUpdateSignal = wf.defineSignal<[ShipmentCarrierUpdateSignal]>(
-  'ShipmentCarrierUpdateSignalName'
-);
-
-async function updateStatus(shipmentContext: ShipmentContext, status: Status): Promise<void> {
-  shipmentContext.status = status;
-  shipmentContext.updatedAt = Temporal.Now.toString();
-  updateShipmentStatus(shipmentContext.id, status);
-  const handle = getExternalWorkflowHandle(shipmentContext.requestorWorkflowId);
-  await handle.signal(ShipmentStatusUpdatedSignalName, {
-    shipmentId: shipmentContext.id,
-    status: status,
-    updatedAt: shipmentContext.updatedAt
-  } as ShipmentStatusUpdatedSignal);
 }

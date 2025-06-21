@@ -1,10 +1,9 @@
 import * as wf from '@temporalio/workflow';
 
 import { log } from '@temporalio/workflow';
-import { Item, GenerateInvoiceResult, ChargeInput, ChargeResult } from './definitions.js';
 import * as activities from './activities.js';
-import { ChargeCustomerInput, ChargeCustomerResult } from './definitions.js';
 import { chargeCustomer } from './activities.js';
+import { ChargeInput, ChargeResult } from './definitions.js';
 
 export const ShipmentStatusUpdatedSignalName = 'ShipmentStatusUpdated';
 

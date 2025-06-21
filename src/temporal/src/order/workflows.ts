@@ -6,6 +6,7 @@ import * as activities from './activities.js'; // Ensure this path is correct an
 import type { ItemInput, OrderInput } from './definitions.js'; // Import Order type
 import { Fulfillment, OrderItem, OrderQueryResult, ReserveItemsResult } from './order.js'; // Adjust the import path as necessary
 import * as billing from '../billing/definitions.js'; // Ensure this path is correct and the module exists
+import * as shipment from '../shipment/definitions.js'; // Ensure this path is correct and the module exists
 export const ShipmentStatusUpdatedSignalName = 'ShipmentStatusUpdated';
 
 export type ShipmentStatus = 'pending' | 'shipped' | 'timed_out' | 'cancelled';
@@ -280,12 +281,10 @@ async function processPaymentOld(fulfillment: Fulfillment): Promise<string> {
 
 export async function processPayment(fulfillment: Fulfillment): Promise<string> {
   log.info(`processPayment: ${JSON.stringify(fulfillment, null, 2)}`);
-  const billingItems: billing.Item[] = fulfillment.items.map((item) => {
-    return {
-      sku: item.sku,
-      quantity: item.quantity
-    };
-  });
+  const billingItems: billing.Item[] = fulfillment.items.map((item) => ({
+    sku: item.sku,
+    quantity: item.quantity
+  }));
 
   const chargeKey = uuid4();
   const workflowId = `charge-${chargeKey}`;
@@ -315,4 +314,38 @@ export async function processPayment(fulfillment: Fulfillment): Promise<string> 
     resolve('Payment processed successfully');
   });
 }
-function processShipment(fulfillment: Fulfillment) {}
+export async function processShipment(fulfillment: Fulfillment): Promise<string> {
+  log.info(`processShipment: ${JSON.stringify(fulfillment, null, 2)}`);
+
+  const shipmentItems: shipment.Item[] = fulfillment.items.map((item) => ({
+    sku: item.sku,
+    quantity: item.quantity
+  }));
+
+  const requestorWorkflowId = wf.workflowInfo().workflowId;
+  const shipmentInput: shipment.ShipmentInput = {
+    requestorWorkflowId: requestorWorkflowId,
+    id: fulfillment.id,
+    items: shipmentItems
+  };
+  log.info(`shipmentInput: ${JSON.stringify(shipmentInput, null, 2)}`);
+  const workflowId = `ship-${fulfillment.id}`;
+  log.info(`ship: workflowId: ${workflowId}`);
+  try {
+    const workflowResult = await executeChild('ship', {
+      args: [shipmentInput],
+      taskQueue: 'shipments',
+      workflowId: workflowId,
+      workflowExecutionTimeout: '10m'
+    });
+    log.info(`shipment workflow result: ${JSON.stringify(workflowResult)}`);
+  } catch (error) {
+    log.error(`Error processing shipment for fulfillment ${fulfillment.id}: ${error}`);
+    return new Promise((resolve, reject) => {
+      reject(error);
+    });
+  }
+  return new Promise((resolve, reject) => {
+    resolve('Payment processed successfully');
+  });
+}
