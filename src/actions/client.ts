@@ -94,6 +94,18 @@ export interface Reservation {
 export interface ReserveItemsResult {
   reservations: Reservation[];
 }
+export interface ShipmentItem {
+  sku: string;
+  quantity: number;
+}
+
+export interface ShipmentStatus {
+  workflowId: string;
+  id: string;
+  items: ShipmentItem[];
+  status: string;
+  updatedAt: string;
+}
 
 const client = makeClient();
 

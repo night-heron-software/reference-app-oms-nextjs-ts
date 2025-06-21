@@ -317,7 +317,7 @@ export async function processPayment(fulfillment: Fulfillment): Promise<string> 
 export async function processShipment(fulfillment: Fulfillment): Promise<string> {
   log.info(`processShipment: ${JSON.stringify(fulfillment, null, 2)}`);
 
-  const shipmentItems: shipment.Item[] = fulfillment.items.map((item) => ({
+  const shipmentItems: shipment.ShipmentItem[] = fulfillment.items.map((item) => ({
     sku: item.sku,
     quantity: item.quantity
   }));

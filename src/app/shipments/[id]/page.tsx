@@ -1,16 +1,19 @@
 // /Users/jeffromine/src/learning/temporal/reference-app-oms-nextjs-ts/app/shipments/[id]/page.tsx
 'use client';
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { use, useEffect, useRef, useState } from 'react';
 
 // Assuming these components are converted to React and available at these paths.
 // Adjust import paths based on your actual project structure (e.g., using path aliases like @/lib/components).
 import Button from '@/components/Button';
 import Card from '@/components/Card';
 import Heading from '@/components/Heading';
-import ItemDetails from '@/components/ItemDetails'; // Converted from ItemDetails.svelte
+import { ItemDetailsItem } from '@/components/ItemDetails'; // Converted from ItemDetails.svelte
+import ItemDetails from '@/components/ItemDetails';
 import ShipmentProgress from '@/components/ShipmentProgress';
-import { OrderItem } from '@/src/types/order'; // Adjust the import path as necessary
+import { OrderItem } from '@/types/order'; // Adjust the import path as necessary
+import { fetchShipmentById, fetchShipments, updateShipmentCarrierStatus } from '@/actions/actions';
+import { ShipmentStatus } from '@/actions/client';
 
 // Type definitions (assuming they are in a shared types file, e.g., ../@/types/order)
 // You should import these from your actual types file.
@@ -53,105 +56,80 @@ interface ShipmentProgressProps {
 // In a typical Next.js app, `shipment` might be fetched server-side based on `params.id`
 // or fetched client-side within this component.
 interface ShipmentDetailPageProps {
-  data: {
-    shipment: Shipment | null; // Shipment could be null if not found or during initial loading
-  };
+  params: Promise<{ id: string }>;
   // params: { id: string }; // Next.js would provide this if this is a route component
 }
 
-export default function ShipmentDetailPage({ data }: ShipmentDetailPageProps) {
-  const initialShipment = data.shipment;
+export default function ShipmentDetailPage(props: ShipmentDetailPageProps) {
+  const params = use(props.params);
+  const { id } = params;
 
-  const [status, setStatus] = useState<string | undefined>(initialShipment?.status);
+  const [shipment, setShipment] = useState<ShipmentStatus | null>(null);
+  const [pageLoading, setPageLoading] = useState(true);
+
+  // Initial data fetch
+
   const broadcasterRef = useRef<BroadcastChannel | null>(null);
 
   // Effect to synchronize local status if the initialShipment prop's status changes.
   // This handles cases where the parent component might pass updated shipment data.
   useEffect(() => {
-    setStatus(initialShipment?.status);
-  }, [initialShipment?.status]);
-
-  // Effect for BroadcastChannel setup, message handling, and cleanup.
-  useEffect(() => {
-    if (initialShipment?.id) {
-      const bc = new BroadcastChannel(`shipment-${initialShipment.id}`);
-      broadcasterRef.current = bc;
-
-      const handleMessage = (event: MessageEvent) => {
-        if (typeof event.data === 'string') {
-          setStatus(event.data);
+    setPageLoading(true);
+    const shipment = fetchShipmentById(id);
+    shipment
+      .then((fetchedShipment) => {
+        if (!fetchedShipment) {
+          setPageLoading(false);
+        } else {
+          setShipment(fetchedShipment);
+          setPageLoading(false);
         }
-      };
-
-      bc.addEventListener('message', handleMessage);
-
-      // Cleanup function: remove listener and close channel when component unmounts or ID changes.
-      return () => {
-        bc.removeEventListener('message', handleMessage);
-        bc.close();
-        broadcasterRef.current = null;
-      };
-    }
-  }, [initialShipment?.id]); // Re-run effect if the shipment ID changes.
+      })
+      .catch((error) => {
+        console.error('Error fetching shipment:', error);
+        setPageLoading(false);
+      });
+  }, []);
 
   // Render loading state or error if shipment data is not available.
-  if (!initialShipment) {
+  if (pageLoading) {
     return (
       <div className="p-4">
         <Heading>Loading shipment details...</Heading>
-        {/* Or a more sophisticated loading component */}
       </div>
     );
-  }
+  } else {
+    const actionButtonsContent = (
+      <>
+        <Button disabled={shipment.status !== 'booked'} onClick={() => dispatchShipment(shipment)}>
+          Dispatch
+        </Button>
+        <Button
+          disabled={shipment.status !== 'dispatched'}
+          onClick={() => deliverShipment(shipment)}
+        >
+          Deliver
+        </Button>
+      </>
+    );
 
-  const handleApiCall = async (
-    currentShipment: Shipment,
-    newStatus: 'dispatched' | 'delivered',
-    signalName: 'ShipmentUpdate'
-  ) => {
-    const signal = { name: signalName, status: newStatus };
-    try {
-      await fetch('/api/shipment', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ shipment: currentShipment, signal })
-      });
-      setStatus(newStatus);
-      broadcasterRef.current?.postMessage(newStatus);
-    } catch (error) {
-      console.error(`Failed to set shipment status to ${newStatus}:`, error);
-      // Optionally, provide user feedback about the error
-    }
-  };
-
-  const dispatchShipmentHandler = () => {
-    handleApiCall(initialShipment, 'dispatched', 'ShipmentUpdate');
-  };
-
-  const deliverShipmentHandler = () => {
-    handleApiCall(initialShipment, 'delivered', 'ShipmentUpdate');
-  };
-
-  const actionButtonsContent = (
-    <>
-      <Button disabled={status !== 'booked'} onClick={dispatchShipmentHandler}>
-        Dispatch
-      </Button>
-      <Button disabled={status !== 'dispatched'} onClick={deliverShipmentHandler}>
-        Deliver
-      </Button>
-    </>
-  );
-
-  return (
-    <Card actionButtons={actionButtonsContent}>
-      <div className="w-full flex flex-col gap-2">
-        <div className="flex flex-col md:flex-row items-center justify-between gap-2 w-full">
-          <Heading>{initialShipment.id}</Heading>
-          <ShipmentProgress status={status} />
+    return (
+      <Card actionButtons={actionButtonsContent}>
+        <div className="w-full flex flex-col gap-2">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-2 w-full">
+            <Heading>{shipment.id}</Heading>
+            <ShipmentProgress status={shipment.status} />
+          </div>
+          <ItemDetails items={shipment.items as ItemDetailsItem[]} />
         </div>
-        <ItemDetails items={initialShipment.items} />
-      </div>
-    </Card>
-  );
+      </Card>
+    );
+  }
+}
+function dispatchShipment(shipmentStatus: ShipmentStatus) {
+  updateShipmentCarrierStatus(shipmentStatus.id, shipmentStatus.workflowId, 'dispatched');
+}
+
+function deliverShipment(shipmentStatus: ShipmentStatus) {
+  updateShipmentCarrierStatus(shipmentStatus.id, shipmentStatus.workflowId, 'delivered');
 }

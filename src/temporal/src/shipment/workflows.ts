@@ -69,10 +69,11 @@ export async function ship(input: ShipmentInput): Promise<ShipmentResult> {
     status: 'pending' as Status,
     updatedAt: Temporal.Now.instant().toString()
   };
-
+  const workflowId = wf.workflowInfo().workflowId;
   wf.setHandler(getShipmentStatus, () => {
     log.info(`getShipmentStatus called for: ${shipmentContext.id}`);
     return {
+      workflowId: workflowId,
       id: input.id,
       items: input.items,
       status: shipmentContext.status,

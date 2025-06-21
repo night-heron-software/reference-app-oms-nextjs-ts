@@ -1,16 +1,14 @@
 // /Users/jeffromine/src/learning/temporal/reference-app-oms-nextjs-ts/app/shipments/page.tsx
 'use client'; // Assuming child components might have client-side interactions
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 
 // Assuming these components are converted to React and available at these paths
 // You might need to adjust the import paths based on your project structure
-import Link from '@/components/Link'; // Placeholder for Link.tsx
-import TableWithHeader from '@/components/TableWithHeader'; // Placeholder for TableWithHeader.tsx
-import StatusBadge from '@/components/StatusBadge'; // Placeholder for StatusBadge.tsx
-import { ColumnDefinition } from '../orders/page';
-import { TableColumns } from '@/src/types/ui';
 import { fetchShipments } from '@/actions/actions';
+import Link from '@/components/Link'; // Placeholder for Link.tsx
+import StatusBadge from '@/components/StatusBadge'; // Placeholder for StatusBadge.tsx
+import TableWithHeader from '@/components/TableWithHeader'; // Placeholder for TableWithHeader.tsx
 
 // Define placeholder props for imported components for type safety
 // Actual props might differ based on your component implementations

@@ -1,18 +1,17 @@
 'use client';
 
-import { useEffect, useState, useMemo, useCallback, use } from 'react';
-import { useRouter } from 'next/navigation';
 import { fetchOrderById } from '@/actions/actions'; // Adjust the import path as necessary
+import { use, useEffect, useMemo, useState } from 'react';
 
 // Assuming components are converted to React and placed in a components directory
 // You might need to adjust these paths based on your project structure and path aliases
-import Fulfillment from '@/components/Fulfillment'; // Corrected spelling
 import Button from '@/components/Button';
 import Card from '@/components/Card';
+import Fulfillment from '@/components/Fulfillment'; // Corrected spelling
 import Heading from '@/components/Heading';
 import StatusBadge from '@/components/StatusBadge';
 // FIXME: need to find the correct way to share types between nextjs and temporal
-import type { OrderQueryResult } from '@/types/shared';
+import type { OrderQueryResult } from '@/actions/client';
 
 // Assuming types are defined in a shared location, e.g., @/types/order
 // You would need to create this file and define the types.
@@ -24,7 +23,7 @@ import type { OrderQueryResult } from '@/types/shared';
 //   customerId: string;
 //   // ... other properties
 // }
-import type { Action, Order } from '@/types/order';
+import type { Action } from '@/types/order';
 
 interface OrderPageProps {
   params: Promise<{ id: string }>;
@@ -32,7 +31,6 @@ interface OrderPageProps {
 
 export default function OrderPage(props: OrderPageProps) {
   const params = use(props.params);
-  const router = useRouter();
   const { id } = params;
 
   const [order, setOrder] = useState<OrderQueryResult | null>(null);

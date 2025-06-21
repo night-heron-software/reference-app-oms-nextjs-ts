@@ -1,8 +1,12 @@
 import React from 'react';
-import type { OrderItem } from '@/src/types/order'; // Adjusted path for Next.js
+
+export interface ItemDetailsItem {
+  sku: string;
+  quantity: number;
+}
 
 interface ItemDetailsProps {
-  items?: OrderItem[]; // Made items optional to match Svelte's default []
+  items?: ItemDetailsItem[]; // Made items optional to match Svelte's default []
 }
 
 const ItemDetails: React.FC<ItemDetailsProps> = ({ items = [] }) => {
@@ -10,7 +14,7 @@ const ItemDetails: React.FC<ItemDetailsProps> = ({ items = [] }) => {
     <div className="flex flex-col gap-2 container">
       {items.map((item, index) => (
         <div key={index} className="flex gap-2 items-center">
-          {/* Assuming OrderItem has an 'id' for the key */}
+          {/* Assuming ItemDetailsItem has an 'id' for the key */}
           <p className="flex flex-col items-center shadow-md justify-center w-8 h-8 rounded-full bg-blue-500/90 text-white font-semibold">
             {item.quantity}
           </p>

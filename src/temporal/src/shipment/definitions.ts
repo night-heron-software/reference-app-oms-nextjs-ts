@@ -1,4 +1,4 @@
-export interface Item {
+export interface ShipmentItem {
   sku: string;
   quantity: number;
 }
@@ -28,7 +28,7 @@ export interface ShipmentResult {
 export interface ShipmentImpl {
   requestorWorkflowId: string;
   id: string;
-  Items: Item[];
+  Items: ShipmentItem[];
   status: string;
   updatedAt: string;
 }
@@ -48,13 +48,14 @@ export interface ShipmentStatsResult {
 export interface ShipmentInput {
   requestorWorkflowId: string;
   id: string;
-  items: Item[];
+  items: ShipmentItem[];
 }
 
 export interface ShipmentStatus {
+  workflowId: string;
   id: string;
-  items: Item[];
-  status: Status;
+  items: ShipmentItem[];
+  status: string;
   updatedAt: string;
 }
 
@@ -64,7 +65,7 @@ export interface ShipmentResult {
 
 export interface BookShipmentInput {
   reference: string;
-  items: Item[];
+  items: ShipmentItem[];
 }
 
 // BookShipmentResult is the result for the BookShipment operation.

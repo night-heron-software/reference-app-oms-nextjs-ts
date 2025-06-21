@@ -1,7 +1,7 @@
 'use server';
 import 'server-only';
 
-import { getTemporalClient, OrderQueryResult, Shipment } from './client';
+import { getTemporalClient, OrderQueryResult, Shipment, ShipmentStatus } from './client';
 import { sql } from '@vercel/postgres';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
@@ -98,5 +98,33 @@ export async function fetchOrderById(id: string): Promise<OrderQueryResult | und
   } catch (error) {
     console.warn(`Error fetching order by ID ${id}:`, error);
     return undefined;
+  }
+}
+const getShipmentStatus = defineQuery<ShipmentStatus>('getShipmentStatus');
+
+export async function fetchShipmentById(id: string): Promise<ShipmentStatus | undefined> {
+  const client = await getTemporalClient();
+
+  const handle = client.workflow.getHandle('ship-' + id);
+  try {
+    const shipmentStatus = await handle.query(getShipmentStatus);
+    console.log(`Fetched order: ${JSON.stringify(shipmentStatus, null, 2)}`);
+    return shipmentStatus;
+  } catch (error) {
+    console.warn(`Error fetching shipment by ID ${id}:`, error);
+    return undefined;
+  }
+}
+export async function updateShipmentCarrierStatus(
+  shipmentId: string,
+  workflowId: string,
+  status: string
+): Promise<void> {
+  const client = await getTemporalClient();
+  const handle = client.workflow.getHandle(workflowId);
+  try {
+    await handle.signal('ShipmentCarrierUpdateSignalName', workflowId, { status: status });
+  } catch (error) {
+    console.warn(`Error updating shipment carrier status for ${shipmentId}:`, error);
   }
 }
