@@ -1,6 +1,6 @@
 'use client';
 
-import { fetchOrderById } from '@/actions/actions'; // Adjust the import path as necessary
+import { fetchOrderById, sendCustomerActionSignal } from '@/actions/actions'; // Adjust the import path as necessary
 import { use, useEffect, useMemo, useState } from 'react';
 
 // Assuming components are converted to React and placed in a components directory
@@ -24,6 +24,7 @@ import type { OrderQueryResult } from '@/actions/client';
 //   // ... other properties
 // }
 import type { Action } from '@/types/order';
+import { send } from 'process';
 
 interface OrderPageProps {
   params: Promise<{ id: string }>;
@@ -61,6 +62,7 @@ export default function OrderPage(props: OrderPageProps) {
 
   const sendAction = async (action: Action) => {
     console.log(`Sending action: ${action} for order ID: ${id}`);
+    sendCustomerActionSignal(id, action);
   };
 
   const actionRequired = useMemo(() => {

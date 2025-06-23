@@ -2,7 +2,6 @@ import * as wf from '@temporalio/workflow';
 
 import { log } from '@temporalio/workflow';
 import * as activities from './activities.js';
-import { chargeCustomer } from './activities.js';
 import { ChargeInput, ChargeResult } from './definitions.js';
 
 export const ShipmentStatusUpdatedSignalName = 'ShipmentStatusUpdated';
@@ -17,7 +16,7 @@ export interface ShipmentStatusUpdatedSignal {
 export const shipmentStatusSignal =
   wf.defineSignal<[ShipmentStatusUpdatedSignal]>('ShipmentStatusUpdated');
 
-const { generateInvoice } = wf.proxyActivities<typeof activities>({
+const { generateInvoice, chargeCustomer } = wf.proxyActivities<typeof activities>({
   retry: {
     initialInterval: '1 minute',
     maximumInterval: '16 minute',

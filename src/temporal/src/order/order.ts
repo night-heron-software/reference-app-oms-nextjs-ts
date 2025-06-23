@@ -16,7 +16,8 @@ export type OrderStatus =
   | 'customerActionRequired'
   | 'completed'
   | 'failed'
-  | 'cancelled';
+  | 'cancelled'
+  | 'timedOut';
 
 export interface OrderItem extends ItemInput {
   sku: string;

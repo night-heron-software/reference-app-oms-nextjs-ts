@@ -1,0 +1,36 @@
+#+TITLE:  Tempororal OMS Reference App Typescript TODO List
+#+AUTHOR: Jeff Romine
+#+EMAIL:  jromineut@gmail.com
+#+DATE:   2025-06-22 Sun
+#+DESCRIPTION:
+#+KEYWORDS:
+#+LANGUAGE:  en
+#+OPTIONS:   H:3 num:t toc:t \n:nil @:t ::t |:t ^:t -:t f:t *:t <:t
+#+OPTIONS:   TeX:t LaTeX:t skip:nil d:nil todo:t pri:nil tags:not-in-toc
+#+OPTIONS: ^:{} author:nil email:nil creator:nil timestamp:nil
+#+INFOJS_OPT: view:nil toc:nil ltoc:t mouse:underline buttons:0 path:http://orgmode.org/org-info.js
+#+EXPORT_SELECT_TAGS: export
+#+EXPORT_EXCLUDE_TAGS: noexport
+#+LINK_UP:
+#+LINK_HOME:
+#+XSLT:
+#+STARTUP: showeverything
+
+* DONE fix workflow names
+CLOSED: [2025-06-23 Mon 09:22]
+
+** processOrder => order
+
+* TODO fix customer action required
+
+** Order detail page
+
+[[*** http://localhost:3000/orders/A4-1750691647363]]
+
+- status stuck in pending
+
+* TODO Shipment Status
+
+* Refresh on Courier shipments pages
+
+* Make workflow retry and duration parameters match svelte/go

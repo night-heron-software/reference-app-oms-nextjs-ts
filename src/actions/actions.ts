@@ -1,7 +1,7 @@
 'use server';
 import 'server-only';
 
-import { getTemporalClient, OrderQueryResult, Shipment, ShipmentStatus } from './client';
+import { Action, getTemporalClient, OrderQueryResult, Shipment, ShipmentStatus } from './client';
 import { sql } from '@vercel/postgres';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
@@ -39,7 +39,7 @@ export async function createOrder(formData: FormData): Promise<void> {
 
   const result = await new Promise((resolve, reject) => {
     client.workflow
-      .start('processOrder', {
+      .start('order', {
         taskQueue: 'orders',
         workflowId: orderInput.id,
         args: [orderInput],
@@ -134,5 +134,43 @@ export async function updateShipmentCarrierStatus(
     await handle.signal(shipmentCarrierUpdateSignal, { status: status });
   } catch (error) {
     console.warn(`Error updating shipment carrier status for ${shipmentId}:`, error);
+  }
+}
+/* func (h *handlers) handleCustomerAction(w http.ResponseWriter, r *http.Request) {
+	var signal CustomerActionSignal
+
+	err := json.NewDecoder(r.Body).Decode(&signal)
+	if err != nil {
+		h.logger.Error("Failed to decode customer action signal", "error", err)
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	err = h.temporal.SignalWorkflow(context.Background(),
+		OrderWorkflowID(r.PathValue("id")), "",
+		CustomerActionSignalName,
+		signal,
+	)
+	if err != nil {
+		if _, ok := err.(*serviceerror.NotFound); ok {
+			h.logger.Error("Failed to signal order workflow", "error", err)
+			http.Error(w, "Order not found", http.StatusNotFound)
+		} else {
+			h.logger.Error("Failed to signal order workflow", "error", err)
+			http.Error(w, err.Error(), http.StatusBadRequest)
+		}
+		return
+	}
+} */
+const customerActionSignal = defineSignal<[string]>('customerAction');
+
+export async function sendCustomerActionSignal(workflowId: string, action: Action): Promise<void> {
+  const client = await getTemporalClient();
+  const handle = client.workflow.getHandle(workflowId);
+
+  try {
+    await handle.signal(customerActionSignal, action);
+  } catch (error) {
+    console.warn(`Failed to send customer action signal`, error);
   }
 }

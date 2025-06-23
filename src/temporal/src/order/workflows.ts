@@ -44,7 +44,7 @@ function customerActionRequired(order: OrderQueryResult): boolean {
   return false;
 }
 
-export async function processOrder(input: OrderInput): Promise<OrderQueryResult> {
+export async function order(input: OrderInput): Promise<OrderQueryResult> {
   if (!input) {
     throw new Error('Input is Empty!');
   }
@@ -92,9 +92,11 @@ export async function processOrder(input: OrderInput): Promise<OrderQueryResult>
     if (customerAction === 'amend') {
       cancelUnavailableFulfillments(order);
     } else if (customerAction === 'cancel') {
+      cancelAllFulfillments(order);
       updateOrderStatus(order.id, 'cancelled');
       return order;
     } else if (customerAction === 'timedOut') {
+      updateOrderStatus(order.id, 'timedOut');
       cancelAllFulfillments(order);
       return order;
     } else {
@@ -138,13 +140,21 @@ export async function processOrder(input: OrderInput): Promise<OrderQueryResult>
 function buildFulfillments(reserveItemsResult: ReserveItemsResult, order: OrderQueryResult) {
   return reserveItemsResult.reservations.map((reservation, i): Fulfillment => {
     const id = `${order.id}:${i + 1}`;
+    const status = reservation.available ? 'pending' : 'unavailable';
+
+    if (!reservation.available) {
+      log.info(
+        `Reservation for order ${order.id} is unavailable at location ${reservation.location}`
+      );
+    }
+
     return {
       orderId: order.id,
       customerId: order.customerId,
       id: id,
       items: reservation.items,
       location: reservation.location,
-      status: 'pending'
+      status: status
     };
   });
 }
@@ -169,10 +179,10 @@ async function runFulfillments(order: OrderQueryResult) {
 
   const fulfillmentResults = order.fulfillments.map((fulfillment) => {
     log.info(`Starting fulfillment workflow for: ${fulfillment.id}`);
-    return wf.executeChild(processFulfillment, {
+    return wf.executeChild(fulfill, {
       args: [fulfillment],
       taskQueue: 'orders',
-      workflowId: `fulfillment-${fulfillment.id}`,
+      workflowId: `fulfill-${fulfillment.id}`,
       workflowExecutionTimeout: '10m'
     });
   });
@@ -186,7 +196,7 @@ async function runFulfillments(order: OrderQueryResult) {
     });
 }
 
-export async function processFulfillment(fulfillment: Fulfillment): Promise<string | null> {
+export async function fulfill(fulfillment: Fulfillment): Promise<string | null> {
   log.info(`processFulfillment(${fulfillment.id})`);
 
   if (fulfillment.status === 'cancelled') {
@@ -200,10 +210,6 @@ export async function processFulfillment(fulfillment: Fulfillment): Promise<stri
 
   return null;
 }
-/* log.info(`Processing fulfillment: ${fulfillment.id}`);
-  await wf.sleep('1 minutes'); // Simulate some processing time
-  return 'Fulfillment processed successfully';
-} */
 
 function cancelUnavailableFulfillments(order: OrderQueryResult): void {
   order.fulfillments?.forEach((fulfillment) => {
@@ -262,23 +268,6 @@ async function waitForCustomer(order: OrderQueryResult): Promise<string> {
   return signalValue || 'noActionTaken';
 }
 
-async function processPaymentOld(fulfillment: Fulfillment): Promise<string> {
-  const workflowResult = await wf.executeChild('charge', {
-    args: [fulfillment],
-    taskQueue: 'billing',
-    workflowId: `charge-${fulfillment.id}`,
-    workflowExecutionTimeout: '10m'
-  });
-
-  return 'Payment processed successfully';
-
-  /*   const chargeResult = await chargeActivity(fulfillment);
-  log.info(`Charge result: ${JSON.stringify(chargeResult, null, 2)}`);
-  // await wf.sleep('30 seconds ');
-  return 'Payment processed successfully';
- */
-}
-
 export async function processPayment(fulfillment: Fulfillment): Promise<string> {
   log.info(`processPayment: ${JSON.stringify(fulfillment, null, 2)}`);
   const billingItems: billing.Item[] = fulfillment.items.map((item) => ({
@@ -287,7 +276,7 @@ export async function processPayment(fulfillment: Fulfillment): Promise<string> 
   }));
 
   const chargeKey = uuid4();
-  const workflowId = `charge-${chargeKey}`;
+  const workflowId = `charge-${wf.workflowInfo().workflowId}-${chargeKey}`;
   log.info(`charge: workflowId: ${workflowId}`);
   try {
     const workflowResult = await executeChild('charge', {
