@@ -1,6 +1,6 @@
 import * as wf from '@temporalio/workflow';
 
-import { executeChild, log, uuid4 } from '@temporalio/workflow';
+import { log, uuid4 } from '@temporalio/workflow';
 
 import * as activities from './activities.js'; // Ensure this path is correct and the module exists
 import type { ItemInput, OrderInput } from './definitions.js'; // Import Order type
@@ -10,6 +10,7 @@ import * as shipment from '../shipment/definitions.js'; // Ensure this path is c
 export const ShipmentStatusUpdatedSignalName = 'ShipmentStatusUpdated';
 
 export type ShipmentStatus = 'pending' | 'shipped' | 'timed_out' | 'cancelled';
+
 export interface ShipmentStatusUpdatedSignal {
   shipmentId: string;
   status: ShipmentStatus;
@@ -26,7 +27,7 @@ const { reserveItems, updateOrderStatus } = wf.proxyActivities<typeof activities
     backoffCoefficient: 2,
     maximumAttempts: 500
   },
-  startToCloseTimeout: '2 hours'
+  startToCloseTimeout: '2h'
 });
 
 function customerActionRequired(order: OrderQueryResult): boolean {
@@ -179,12 +180,18 @@ async function runFulfillments(order: OrderQueryResult) {
 
   const fulfillmentResults = order.fulfillments.map((fulfillment) => {
     log.info(`Starting fulfillment workflow for: ${fulfillment.id}`);
-    return wf.executeChild(fulfill, {
-      args: [fulfillment],
-      taskQueue: 'orders',
-      workflowId: `fulfill-${fulfillment.id}`,
-      workflowExecutionTimeout: '10m'
-    });
+    return wf
+      .executeChild(fulfill, {
+        args: [fulfillment],
+        taskQueue: 'orders',
+        workflowId: `fulfill-${fulfillment.id}`,
+        workflowExecutionTimeout: '2h',
+        workflowTaskTimeout: '2m'
+      })
+      .then((result) => {
+        log.info(`Fulfillment workflow completed for: ${fulfillment.id}, result: ${result}`);
+        return result;
+      });
   });
 
   await Promise.all(fulfillmentResults)
@@ -203,12 +210,12 @@ export async function fulfill(fulfillment: Fulfillment): Promise<string | null> 
     log.info(`ignoring cancelled fulfillment ${fulfillment.id}`);
     return null;
   }
-
+  // waits for payment to be processed before proceeding with shipment
   await processPayment(fulfillment);
 
   await processShipment(fulfillment);
-
-  return null;
+  log.info(`Fulfillment ${fulfillment.id} processed successfully`);
+  return `Fulfillment ${fulfillment.id} processed successfully`;
 }
 
 function cancelUnavailableFulfillments(order: OrderQueryResult): void {
@@ -229,6 +236,7 @@ function cancelAllFulfillments(order: OrderQueryResult): void {
   });
   order.status = 'cancelled'; // Update the order status to 'cancelled'
   log.info(`All fulfillments for order ${order.id} have been cancelled.`);
+  updateOrderStatus(order.id, 'cancelled'); // Update the order status in the database
   // Do I need to update the database or notify any services about this cancellation?
   // You might want to call an activity to update the order status in the database here
 }
@@ -279,7 +287,7 @@ export async function processPayment(fulfillment: Fulfillment): Promise<string> 
   const workflowId = `charge-${wf.workflowInfo().workflowId}-${chargeKey}`;
   log.info(`charge: workflowId: ${workflowId}`);
   try {
-    const workflowResult = await executeChild('charge', {
+    const workflowResult = await wf.executeChild('charge', {
       args: [
         {
           customerId: fulfillment.customerId,
@@ -290,7 +298,8 @@ export async function processPayment(fulfillment: Fulfillment): Promise<string> 
       ],
       taskQueue: 'billing',
       workflowId: workflowId,
-      workflowExecutionTimeout: '10m'
+      workflowExecutionTimeout: '2h',
+      workflowTaskTimeout: '2m'
     });
     log.info(`charge workflow result: ${JSON.stringify(workflowResult)}`);
   } catch (error) {
@@ -321,11 +330,12 @@ export async function processShipment(fulfillment: Fulfillment): Promise<string>
   const workflowId = `ship-${fulfillment.id}`;
   log.info(`ship: workflowId: ${workflowId}`);
   try {
-    const workflowResult = await executeChild('ship', {
+    const workflowResult = await wf.executeChild('ship', {
       args: [shipmentInput],
       taskQueue: 'shipments',
       workflowId: workflowId,
-      workflowExecutionTimeout: '10m'
+      workflowExecutionTimeout: '2h',
+      workflowTaskTimeout: '2m'
     });
     log.info(`shipment workflow result: ${JSON.stringify(workflowResult)}`);
   } catch (error) {

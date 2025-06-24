@@ -88,12 +88,13 @@ export async function ship(input: ShipmentInput): Promise<ShipmentResult> {
 
   await updateStatus(shipmentContext, 'booked');
 
-  wf.setHandler(shipmentCarrierUpdateSignal, (parms) => {
+  wf.setHandler(shipmentCarrierUpdateSignal, async (parms) => {
     const status = parms.status;
+    await updateStatus(shipmentContext, status as Status);
+
     log.info(`Shipment status updated: ${status}`);
     shipmentContext.status = status as Status;
     shipmentContext.updatedAt = Temporal.Now.toString();
-    updateStatus(shipmentContext, status as Status);
   });
 
   await wf.condition(() => shipmentContext.status === 'delivered');

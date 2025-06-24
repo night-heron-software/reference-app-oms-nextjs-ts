@@ -1,28 +1,18 @@
-// /Users/jeffromine/src/learning/temporal/reference-app-oms-nextjs-ts/app/shipments/[id]/page.tsx
 'use client';
 
 import React, { use, useEffect, useRef, useState } from 'react';
 
 // Assuming these components are converted to React and available at these paths.
 // Adjust import paths based on your actual project structure (e.g., using path aliases like @/lib/components).
+import { fetchShipmentById, updateShipmentCarrierStatus } from '@/actions/actions';
+import { ShipmentStatus } from '@/actions/client';
 import Button from '@/components/Button';
 import Card from '@/components/Card';
 import Heading from '@/components/Heading';
-import { ItemDetailsItem } from '@/components/ItemDetails'; // Converted from ItemDetails.svelte
-import ItemDetails from '@/components/ItemDetails';
+import ItemDetails, { ItemDetailsItem } from '@/components/ItemDetails';
 import ShipmentProgress from '@/components/ShipmentProgress';
 import { OrderItem } from '@/types/order'; // Adjust the import path as necessary
-import { fetchShipmentById, fetchShipments, updateShipmentCarrierStatus } from '@/actions/actions';
-import { ShipmentStatus } from '@/actions/client';
 
-// Type definitions (assuming they are in a shared types file, e.g., ../@/types/order)
-// You should import these from your actual types file.
-/* interface OrderItem {
-  sku: string;
-  quantity: number;
-  // Add other properties if they exist (e.g., name, price)
-}
- */
 export interface Shipment {
   // Exporting if it's defined here, otherwise import
   id: string;
@@ -99,13 +89,20 @@ export default function ShipmentDetailPage(props: ShipmentDetailPageProps) {
       </div>
     );
   } else {
+    if (!shipment) {
+      return (
+        <div className="p-4">
+          <Heading>Shipment not found</Heading>
+        </div>
+      );
+    }
     const actionButtonsContent = (
       <>
-        <Button disabled={shipment.status !== 'booked'} onClick={() => dispatchShipment(shipment)}>
+        <Button disabled={shipment?.status !== 'booked'} onClick={() => dispatchShipment(shipment)}>
           Dispatch
         </Button>
         <Button
-          disabled={shipment.status !== 'dispatched'}
+          disabled={shipment?.status !== 'dispatched'}
           onClick={() => deliverShipment(shipment)}
         >
           Deliver

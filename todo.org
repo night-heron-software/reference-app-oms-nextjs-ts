@@ -31,6 +31,6 @@ CLOSED: [2025-06-23 Mon 09:22]
 
 * TODO Shipment Status
 
-* Refresh on Courier shipments pages
+* TODO Refresh on Courier shipments pages
 
-* Make workflow retry and duration parameters match svelte/go
+* TODO Make workflow retry and duration parameters match svelte/go

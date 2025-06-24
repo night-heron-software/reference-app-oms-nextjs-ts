@@ -50,8 +50,12 @@ export async function createOrder(formData: FormData): Promise<void> {
           backoffCoefficient: 2.0,
           nonRetryableErrorTypes: ['NotFoundError', 'InvalidArgumentError']
         },
-        workflowExecutionTimeout: '2hr',
-        workflowTaskTimeout: '2hr'
+        // Set the workflow and task timeouts
+        // These can be adjusted based on your requirements
+        // workflowExecutionTimeout is the maximum time the workflow can run
+        // workflowTaskTimeout is the maximum time a single task can take
+        workflowExecutionTimeout: '2 days',
+        workflowTaskTimeout: '2m'
       })
       .then((result) => {
         console.log('Workflow started successfully:', result);
@@ -106,14 +110,20 @@ export async function fetchShipmentById(id: string): Promise<ShipmentStatus | un
   const client = await getTemporalClient();
 
   const handle = client.workflow.getHandle('ship-' + id);
-  try {
-    const shipmentStatus = await handle.query(getShipmentStatus);
-    console.log(`Fetched order: ${JSON.stringify(shipmentStatus, null, 2)}`);
-    return shipmentStatus;
-  } catch (error) {
-    console.warn(`Error fetching shipment by ID ${id}:`, error);
-    return undefined;
+  for (let retry = 0; retry < 10; retry++) {
+    try {
+      // Attempt to fetch the shipment status
+      const shipmentStatus = await handle.query(getShipmentStatus);
+      console.log(`Fetched shipment: ${JSON.stringify(shipmentStatus, null, 2)}`);
+      return shipmentStatus;
+    } catch (error) {
+      // If the workflow is not found, wait and retry
+      console.warn(`Shipment workflow not found for ID ${id}, retrying...`);
+      await new Promise((resolve) => setTimeout(resolve, 1000)); // Wait 1 second before retrying
+    }
   }
+  console.warn(`Failed to fetch shipment by ID ${id} after retries.`);
+  return undefined;
 }
 export interface ShipmentCarrierUpdateSignal {
   status: string;

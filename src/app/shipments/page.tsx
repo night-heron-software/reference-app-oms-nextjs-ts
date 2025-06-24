@@ -22,44 +22,12 @@ interface StatusBadgeProps {
   status: string;
 }
 
-// Define the structure for a column definition, similar to the Svelte version
-// The TableWithHeader component would be responsible for using this structure to render cells.
-/* 
-interface ColumnDefinition<T = any> {
-  title: string;
-  key: keyof T | string; // Allow string for flexibility, but keyof T is safer
-  formatter: (
-    value: any,
-    record: T
-  ) => {
-    Component: React.ElementType; // e.g., Link, StatusBadge
-    props: any; // Props for the Component
-  };
-}
- */
-/* interface TableWithHeaderProps<T = any> {
-  title: string;
-  columns: ColumnDefinition<T>[];
-  data: T[];
-}
- */
 // Define the structure of a single shipment item
 interface Shipment {
   id: string;
   status: string;
-  // Add other properties of a shipment if they exist
-  // For example:
-  // orderId: string;
-  // trackingNumber?: string;
-  // estimatedDelivery: string;
 }
 
-// Define the props for this page component
-interface ShipmentsPageProps {
-  data: {
-    shipments: Shipment[];
-  };
-}
 const columns = [
   {
     title: 'Shipment ID',
