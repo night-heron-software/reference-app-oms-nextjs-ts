@@ -1,6 +1,7 @@
 'use client';
 
 import React, { use, useEffect, useRef, useState } from 'react';
+import { router } from 'next/navigation';
 
 // Assuming these components are converted to React and available at these paths.
 // Adjust import paths based on your actual project structure (e.g., using path aliases like @/lib/components).
@@ -56,31 +57,34 @@ export default function ShipmentDetailPage(props: ShipmentDetailPageProps) {
 
   const [shipment, setShipment] = useState<ShipmentStatus | null>(null);
   const [pageLoading, setPageLoading] = useState(true);
+  const refetchShipment = async () => {
+    setPageLoading(true);
 
-  // Initial data fetch
-
-  const broadcasterRef = useRef<BroadcastChannel | null>(null);
-
+    try {
+      const fetchedShipment = await fetchShipmentById(id);
+      setShipment(fetchedShipment ?? null);
+    } catch (error) {
+      console.error('Error fetching shipment:', error);
+      setShipment(null);
+    } finally {
+      setPageLoading(false);
+    }
+  };
   // Effect to synchronize local status if the initialShipment prop's status changes.
   // This handles cases where the parent component might pass updated shipment data.
   useEffect(() => {
-    setPageLoading(true);
-    const shipment = fetchShipmentById(id);
-    shipment
-      .then((fetchedShipment) => {
-        if (!fetchedShipment) {
-          setPageLoading(false);
-        } else {
-          setShipment(fetchedShipment);
-          setPageLoading(false);
-        }
-      })
-      .catch((error) => {
-        console.error('Error fetching shipment:', error);
-        setPageLoading(false);
-      });
+    refetchShipment();
   }, []);
 
+  const handleDispatchShipment = async () => {
+    await updateShipmentCarrierStatus(shipment.id, shipment.workflowId, 'dispatched');
+    await refetchShipment();
+  };
+
+  const handleDeliverShipment = async () => {
+    await updateShipmentCarrierStatus(shipment.id, shipment.workflowId, 'delivered');
+    await refetchShipment();
+  };
   // Render loading state or error if shipment data is not available.
   if (pageLoading) {
     return (
@@ -98,13 +102,10 @@ export default function ShipmentDetailPage(props: ShipmentDetailPageProps) {
     }
     const actionButtonsContent = (
       <>
-        <Button disabled={shipment?.status !== 'booked'} onClick={() => dispatchShipment(shipment)}>
+        <Button disabled={shipment?.status !== 'booked'} onClick={handleDispatchShipment}>
           Dispatch
         </Button>
-        <Button
-          disabled={shipment?.status !== 'dispatched'}
-          onClick={() => deliverShipment(shipment)}
-        >
+        <Button disabled={shipment?.status !== 'dispatched'} onClick={handleDeliverShipment}>
           Deliver
         </Button>
       </>
@@ -122,11 +123,4 @@ export default function ShipmentDetailPage(props: ShipmentDetailPageProps) {
       </Card>
     );
   }
-}
-function dispatchShipment(shipmentStatus: ShipmentStatus) {
-  updateShipmentCarrierStatus(shipmentStatus.id, shipmentStatus.workflowId, 'dispatched');
-}
-
-function deliverShipment(shipmentStatus: ShipmentStatus) {
-  updateShipmentCarrierStatus(shipmentStatus.id, shipmentStatus.workflowId, 'delivered');
 }

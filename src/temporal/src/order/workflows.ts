@@ -130,11 +130,8 @@ export async function order(input: OrderInput): Promise<OrderQueryResult> {
   });
 
   await runFulfillments(order);
-
-  // you can use childHandle to signal, query, cancel, terminate, or get result here
-  await wf.sleep('5 minutes'); // Simulate some processing time
-  log.info(`order: ${JSON.stringify(order, null, 2)}`);
   await updateOrderStatus(order.id, 'completed');
+  log.info(`order: ${JSON.stringify(order, null, 2)}`);
   return order;
 }
 

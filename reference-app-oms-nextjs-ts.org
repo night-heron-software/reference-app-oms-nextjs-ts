@@ -573,4 +573,1157 @@ temporal workflow signal \
 #+end_src
 #+begin_example
 
+Jeff Romine
+how do i trigger a refresh on this page when dispatchShipment is called?
+
+
+Gemini
+Of course! To trigger a refresh on the page after an action like dispatchShipment, you can re-fetch the data from your server and update the component's state.
+
+Given your current setup using a Client Component ('use client') that fetches its own data within useEffect, the most direct approach is to create a reusable function to fetch the shipment data. You can then call this function on the initial page load and again after your dispatchShipment or deliverShipment actions have completed.
+
+Here is how you can modify your component to achieve this:
+
+Summary of Changes:
+Create a refetchShipment function: This function will contain the logic to fetch the shipment data and update the component's state, including loading states.
+Update useEffect: The initial data fetch will now use this new refetchShipment function. I've also added id to the dependency array, which is a good practice.
+Create async event handlers: New handleDispatchShipment and handleDeliverShipment functions will await the update action and then await the refetchShipment call to refresh the data.
+Update Buttons: The buttons will now use these new handler functions.
+Cleanup: The old, standalone dispatchShipment and deliverShipment functions are no longer needed and can be removed.
+Here are the suggested code changes:
+
+page.tsx
+-32
++29
+  const params = use(props.params);
+  const id = decodeURIComponent(params.id);
+
+  const [shipment, setShipment] = useState<ShipmentStatus | null>(null);
+  const [pageLoading, setPageLoading] = useState(true);
+
+  // Initial data fetch
+
+  const broadcasterRef = useRef<BroadcastChannel | null>(null);
+
+  // Effect to synchronize local status if the initialShipment prop's status changes.
+  // This handles cases where the parent component might pass updated shipment data.
+  useEffect(() => {
+  const refetchShipment = async () => {
+    setPageLoading(true);
+    const shipment = fetchShipmentById(id);
+    shipment
+      .then((fetchedShipment) => {
+        if (!fetchedShipment) {
+          setPageLoading(false);
+        } else {
+          setShipment(fetchedShipment);
+          setPageLoading(false);
+        }
+      })
+      .catch((error) => {
+        console.error('Error fetching shipment:', error);
+        setPageLoading(false);
+      });
+  }, []);
+    try {
+      const fetchedShipment = await fetchShipmentById(id);
+      setShipment(fetchedShipment ?? null);
+    } catch (error) {
+      console.error('Error fetching shipment:', error);
+      setShipment(null);
+    } finally {
+      setPageLoading(false);
+    }
+  };
+
+  // Initial data fetch
+  useEffect(() => {
+    refetchShipment();
+  }, [id]);
+
+  // Render loading state or error if shipment data is not available.
+  if (pageLoading) {
+    return (
+      <div className="p-4">
+        <Heading>Loading shipment details...</Heading>
+      </div>
+    );
+  } else {
+    if (!shipment) {
+      return (
+        <div className="p-4">
+          <Heading>Shipment not found</Heading>
+        </div>
+      );
+    }
+
+    const handleDispatchShipment = async () => {
+      await updateShipmentCarrierStatus(shipment.id, shipment.workflowId, 'dispatched');
+      await refetchShipment();
+    };
+
+    const handleDeliverShipment = async () => {
+      await updateShipmentCarrierStatus(shipment.id, shipment.workflowId, 'delivered');
+      await refetchShipment();
+    };
+
+    const actionButtonsContent = (
+      <>
+        <Button disabled={shipment?.status !== 'booked'} onClick={() => dispatchShipment(shipment)}>
+        <Button disabled={shipment.status !== 'booked'} onClick={handleDispatchShipment}>
+          Dispatch
+        </Button>
+        <Button
+          disabled={shipment?.status !== 'dispatched'}
+          onClick={() => deliverShipment(shipment)}
+        >
+        <Button disabled={shipment.status !== 'dispatched'} onClick={handleDeliverShipment}>
+          Deliver
+        </Button>
+      </>
+    );
+  }
+}
+function dispatchShipment(shipmentStatus: ShipmentStatus) {
+  updateShipmentCarrierStatus(shipmentStatus.id, shipmentStatus.workflowId, 'dispatched');
+}
+
+function deliverShipment(shipmentStatus: ShipmentStatus) {
+  updateShipmentCarrierStatus(shipmentStatus.id, shipmentStatus.workflowId, 'delivered');
+}
+
+Alternative: Using router.refresh()
+For future reference, the idiomatic way to refresh data in Next.js's App Router is by using router.refresh(). This method re-fetches the route from the server and re-renders Server Components without a full page reload, preserving client-side state.
+
+This approach works best when data fetching is done in a Server Component and the data is passed down to your Client Component as props. If you were to refactor your page to follow that pattern, you could use useRouter from next/navigation to get access to the refresh method.
+
+I hope this helps you get your page refreshing as you need it! Let me know if you have any other questions.
+
+ Revert to checkpoint
+Context Sources (11)
+Prompts to try
+1 context item
+
+#+end_example
+
+#+begin_src
+#+end_src
+
+#+begin_example
+[start:shipment-worker] 2025-06-24T16:52:24.777Z [INFO] Worker state changed { sdkComponent: 'worker', taskQueue: 'shipments', state: 'STOPPING' }
+[start:order-worker   ] 2025-06-24T16:52:24.779Z [INFO] Worker state changed { sdkComponent: 'worker', taskQueue: 'orders', state: 'STOPPING' }
+[start:shipment-worker] 2025-06-24T16:52:24.780Z [INFO] Worker state changed { sdkComponent: 'worker', taskQueue: 'shipments', state: 'DRAINING' }
+[start:order-worker   ] 2025-06-24T16:52:24.782Z [INFO] Worker state changed { sdkComponent: 'worker', taskQueue: 'orders', state: 'DRAINING' }
+[start:shipment-worker] 2025-06-24T16:52:24.785Z [INFO] Worker state changed { sdkComponent: 'worker', taskQueue: 'shipments', state: 'DRAINED' }
+[start:shipment-worker] 2025-06-24T16:52:24.785Z [INFO] Worker state changed { sdkComponent: 'worker', taskQueue: 'shipments', state: 'STOPPED' }
+[start:order-worker   ] 2025-06-24T16:52:24.786Z [INFO] Worker state changed { sdkComponent: 'worker', taskQueue: 'orders', state: 'DRAINED' }
+[start:order-worker   ] 2025-06-24T16:52:24.787Z [INFO] Worker state changed { sdkComponent: 'worker', taskQueue: 'orders', state: 'STOPPED' }
+[start:shipment-worker] 2025-06-24T16:52:24.789974Z  WARN temporal_sdk_core::worker: Failed to shutdown sticky queue  Status { code: Unimplemented, message: "unknown method ShutdownWorker for service temporal.api.workflowservice.v1.WorkflowService", metadata: MetadataMap { headers: {"content-type": "application/grpc"} }, source: None }
+[start:order-worker   ] 2025-06-24T16:52:24.791888Z  WARN temporal_sdk_core::worker: Failed to shutdown sticky queue  Status { code: Unimplemented, message: "unknown method ShutdownWorker for service temporal.api.workflowservice.v1.WorkflowService", metadata: MetadataMap { headers: {"content-type": "application/grpc"} }, source: None }
+[start:shipment-worker] Waiting for the debugger to disconnect...
+[start:order-worker   ] Waiting for the debugger to disconnect...
+[dev:next             ]  ✓ Compiled in 465ms (353 modules)
+[start:billing-worker ] Debugger attached.
+[dev:next             ]  GET /orders/A1-1750783449972 200 in 285ms
+[dev:next             ]  GET /shipments 200 in 292ms
+[start:order-worker   ] Debugger attached.
+[start:shipment-worker] Debugger attached.
+[dev:next             ] Debugger attached.
+[start:billing-worker ] 2025-06-24T16:52:26.433Z [INFO] Creating worker {
+[start:billing-worker ]   sdkComponent: 'worker',
+[start:billing-worker ]   taskQueue: 'billing',
+[start:billing-worker ]   options: {
+[start:billing-worker ]     namespace: 'default',
+[start:billing-worker ]     identity: '64432@Jeffs-MacBook-Pro.local',
+[start:billing-worker ]     useVersioning: false,
+[start:billing-worker ]     buildId: undefined,
+[start:billing-worker ]     shutdownGraceTime: 0,
+[start:billing-worker ]     enableNonLocalActivities: true,
+[start:billing-worker ]     maxConcurrentWorkflowTaskPolls: 10,
+[start:billing-worker ]     maxConcurrentActivityTaskPolls: 10,
+[start:billing-worker ]     stickyQueueScheduleToStartTimeout: '10s',
+[start:billing-worker ]     maxHeartbeatThrottleInterval: '60s',
+[start:billing-worker ]     defaultHeartbeatThrottleInterval: '30s',
+[start:billing-worker ]     isolateExecutionTimeout: '5s',
+[start:billing-worker ]     workflowThreadPoolSize: 1,
+[start:billing-worker ]     maxCachedWorkflows: 2310,
+[start:billing-worker ]     showStackTraceSources: false,
+[start:billing-worker ]     debugMode: false,
+[start:billing-worker ]     interceptors: { activity: [], workflowModules: [] },
+[start:billing-worker ]     nonStickyToStickyPollRatio: 0.2,
+[start:billing-worker ]     sinks: { __temporal_logger: [Object] },
+[start:billing-worker ]     connection: NativeConnection {
+[start:billing-worker ]       nativeClient: [External: 7ff4e1831260],
+[start:billing-worker ]       referenceHolders: Set(0) {}
+[start:billing-worker ]     },
+[start:billing-worker ]     workflowsPath: '/Users/jeffromine/src/learning/temporal/reference-app-oms-nextjs-ts/src/temporal/lib/billing/workflows.js',
+[start:billing-worker ]     activities: Map(2) {
+[start:billing-worker ]       'chargeCustomer' => [AsyncFunction: chargeCustomer],
+[start:billing-worker ]       'generateInvoice' => [AsyncFunction: generateInvoice]
+[start:billing-worker ]     },
+[start:billing-worker ]     taskQueue: 'billing',
+[start:billing-worker ]     tuner: {
+[start:billing-worker ]       workflowTaskSlotSupplier: [Object],
+[start:billing-worker ]       activityTaskSlotSupplier: [Object],
+[start:billing-worker ]       localActivityTaskSlotSupplier: [Object]
+[start:billing-worker ]     },
+[start:billing-worker ]     reuseV8Context: true,
+[start:billing-worker ]     shutdownGraceTimeMs: 0,
+[start:billing-worker ]     shutdownForceTimeMs: undefined,
+[start:billing-worker ]     stickyQueueScheduleToStartTimeoutMs: 10000,
+[start:billing-worker ]     isolateExecutionTimeoutMs: 5000,
+[start:billing-worker ]     maxHeartbeatThrottleIntervalMs: 60000,
+[start:billing-worker ]     defaultHeartbeatThrottleIntervalMs: 30000,
+[start:billing-worker ]     loadedDataConverter: {
+[start:billing-worker ]       payloadConverter: [DefaultPayloadConverter],
+[start:billing-worker ]       failureConverter: [DefaultFailureConverter],
+[start:billing-worker ]       payloadCodecs: []
+[start:billing-worker ]     }
+[start:billing-worker ]   }
+[start:billing-worker ] }
+[start:order-worker   ] 2025-06-24T16:52:26.808Z [INFO] Creating worker {
+[start:order-worker   ]   sdkComponent: 'worker',
+[start:order-worker   ]   taskQueue: 'orders',
+[start:order-worker   ]   options: {
+[start:order-worker   ]     namespace: 'default',
+[start:order-worker   ]     identity: '64434@Jeffs-MacBook-Pro.local',
+[start:order-worker   ]     useVersioning: false,
+[start:order-worker   ]     buildId: undefined,
+[start:order-worker   ]     shutdownGraceTime: 0,
+[start:order-worker   ]     enableNonLocalActivities: true,
+[start:order-worker   ]     maxConcurrentWorkflowTaskPolls: 10,
+[start:order-worker   ]     maxConcurrentActivityTaskPolls: 10,
+[start:order-worker   ]     stickyQueueScheduleToStartTimeout: '10s',
+[start:order-worker   ]     maxHeartbeatThrottleInterval: '60s',
+[start:order-worker   ]     defaultHeartbeatThrottleInterval: '30s',
+[start:order-worker   ]     isolateExecutionTimeout: '5s',
+[start:order-worker   ]     workflowThreadPoolSize: 1,
+[start:order-worker   ]     maxCachedWorkflows: 2310,
+[start:order-worker   ]     showStackTraceSources: false,
+[start:order-worker   ]     debugMode: false,
+[start:order-worker   ]     interceptors: { activity: [], workflowModules: [] },
+[start:order-worker   ]     nonStickyToStickyPollRatio: 0.2,
+[start:order-worker   ]     sinks: { __temporal_logger: [Object] },
+[start:order-worker   ]     connection: NativeConnection {
+[start:order-worker   ]       nativeClient: [External: 7f9731009480],
+[start:order-worker   ]       referenceHolders: Set(0) {}
+[start:order-worker   ]     },
+[start:order-worker   ]     workflowsPath: '/Users/jeffromine/src/learning/temporal/reference-app-oms-nextjs-ts/src/temporal/lib/order/workflows.js',
+[start:order-worker   ]     activities: Map(4) {
+[start:order-worker   ]       'fetchOrders' => [AsyncFunction: fetchOrders],
+[start:order-worker   ]       'insertOrder' => [AsyncFunction: insertOrder],
+[start:order-worker   ]       'reserveItems' => [AsyncFunction: reserveItems],
+[start:order-worker   ]       'updateOrderStatus' => [AsyncFunction: updateOrderStatus]
+[start:order-worker   ]     },
+[start:order-worker   ]     taskQueue: 'orders',
+[start:order-worker   ]     tuner: {
+[start:order-worker   ]       workflowTaskSlotSupplier: [Object],
+[start:order-worker   ]       activityTaskSlotSupplier: [Object],
+[start:order-worker   ]       localActivityTaskSlotSupplier: [Object]
+[start:order-worker   ]     },
+[start:order-worker   ]     reuseV8Context: true,
+[start:order-worker   ]     shutdownGraceTimeMs: 0,
+[start:order-worker   ]     shutdownForceTimeMs: undefined,
+[start:order-worker   ]     stickyQueueScheduleToStartTimeoutMs: 10000,
+[start:order-worker   ]     isolateExecutionTimeoutMs: 5000,
+[start:order-worker   ]     maxHeartbeatThrottleIntervalMs: 60000,
+[start:order-worker   ]     defaultHeartbeatThrottleIntervalMs: 30000,
+[start:order-worker   ]     loadedDataConverter: {
+[start:order-worker   ]       payloadConverter: [DefaultPayloadConverter],
+[start:order-worker   ]       failureConverter: [DefaultFailureConverter],
+[start:order-worker   ]       payloadCodecs: []
+[start:order-worker   ]     }
+[start:order-worker   ]   }
+[start:order-worker   ] }
+[start:shipment-worker] 2025-06-24T16:52:27.062Z [INFO] Creating worker {
+[start:shipment-worker]   sdkComponent: 'worker',
+[start:shipment-worker]   taskQueue: 'shipments',
+[start:shipment-worker]   options: {
+[start:shipment-worker]     namespace: 'default',
+[start:shipment-worker]     identity: '64433@Jeffs-MacBook-Pro.local',
+[start:shipment-worker]     useVersioning: false,
+[start:shipment-worker]     buildId: undefined,
+[start:shipment-worker]     shutdownGraceTime: 0,
+[start:shipment-worker]     enableNonLocalActivities: true,
+[start:shipment-worker]     maxConcurrentWorkflowTaskPolls: 10,
+[start:shipment-worker]     maxConcurrentActivityTaskPolls: 10,
+[start:shipment-worker]     stickyQueueScheduleToStartTimeout: '10s',
+[start:shipment-worker]     maxHeartbeatThrottleInterval: '60s',
+[start:shipment-worker]     defaultHeartbeatThrottleInterval: '30s',
+[start:shipment-worker]     isolateExecutionTimeout: '5s',
+[start:shipment-worker]     workflowThreadPoolSize: 1,
+[start:shipment-worker]     maxCachedWorkflows: 2310,
+[start:shipment-worker]     showStackTraceSources: false,
+[start:shipment-worker]     debugMode: false,
+[start:shipment-worker]     interceptors: { activity: [], workflowModules: [] },
+[start:shipment-worker]     nonStickyToStickyPollRatio: 0.2,
+[start:shipment-worker]     sinks: { __temporal_logger: [Object] },
+[start:shipment-worker]     connection: NativeConnection {
+[start:shipment-worker]       nativeClient: [External: 7f85d8998e50],
+[start:shipment-worker]       referenceHolders: Set(0) {}
+[start:shipment-worker]     },
+[start:shipment-worker]     workflowsPath: '/Users/jeffromine/src/learning/temporal/reference-app-oms-nextjs-ts/src/temporal/lib/shipment/workflows.js',
+[start:shipment-worker]     activities: Map(2) {
+[start:shipment-worker]       'bookShipment' => [AsyncFunction: bookShipment],
+[start:shipment-worker]       'updateShipmentStatus' => [AsyncFunction: updateShipmentStatus]
+[start:shipment-worker]     },
+[start:shipment-worker]     taskQueue: 'shipments',
+[start:shipment-worker]     tuner: {
+[start:shipment-worker]       workflowTaskSlotSupplier: [Object],
+[start:shipment-worker]       activityTaskSlotSupplier: [Object],
+[start:shipment-worker]       localActivityTaskSlotSupplier: [Object]
+[start:shipment-worker]     },
+[start:shipment-worker]     reuseV8Context: true,
+[start:shipment-worker]     shutdownGraceTimeMs: 0,
+[start:shipment-worker]     shutdownForceTimeMs: undefined,
+[start:shipment-worker]     stickyQueueScheduleToStartTimeoutMs: 10000,
+[start:shipment-worker]     isolateExecutionTimeoutMs: 5000,
+[start:shipment-worker]     maxHeartbeatThrottleIntervalMs: 60000,
+[start:shipment-worker]     defaultHeartbeatThrottleIntervalMs: 30000,
+[start:shipment-worker]     loadedDataConverter: {
+[start:shipment-worker]       payloadConverter: [DefaultPayloadConverter],
+[start:shipment-worker]       failureConverter: [DefaultFailureConverter],
+[start:shipment-worker]       payloadCodecs: []
+[start:shipment-worker]     }
+[start:shipment-worker]   }
+[start:shipment-worker] }
+[dev:next             ] Waiting for the debugger to disconnect...
+[start:billing-worker ] 2025-06-24T16:52:30.432Z [INFO] asset workflow-bundle-471cd41c181d7e210fc5.js 961 KiB [emitted] [immutable] (name: main)
+[start:billing-worker ] runtime modules 670 bytes 3 modules
+[start:billing-worker ] modules by path ./node_modules/@temporalio/ 237 KiB
+[start:billing-worker ]   modules by path ./node_modules/@temporalio/common/ 98.7 KiB 24 modules
+[start:billing-worker ]   modules by path ./node_modules/@temporalio/workflow/ 138 KiB
+[start:billing-worker ]     ./node_modules/@temporalio/workflow/lib/worker-interface.js 8.38 KiB [built] [code generated]
+[start:billing-worker ]     ./node_modules/@temporalio/workflow/lib/global-overrides.js 4.09 KiB [built] [code generated]
+[start:billing-worker ]     ./node_modules/@temporalio/workflow/lib/cancellation-scope.js 9.92 KiB [built] [code generated]
+[start:billing-worker ]     + 16 modules
+[start:billing-worker ] modules by path ./src/temporal/lib/billing/ 1.45 KiB
+[start:billing-worker ]   ./src/temporal/lib/billing/workflows-autogenerated-entrypoint.cjs 491 bytes [built] [code generated]
+[start:billing-worker ]   ./src/temporal/lib/billing/workflows.js 992 bytes [built] [code generated]
+[start:billing-worker ] __temporal_custom_payload_converter (ignored) 15 bytes [built] [code generated]
+[start:billing-worker ] __temporal_custom_failure_converter (ignored) 15 bytes [built] [code generated]
+[start:billing-worker ] ./node_modules/long/umd/index.js 49.8 KiB [built] [code generated]
+[start:billing-worker ] webpack 5.99.8 compiled successfully in 2569 ms { sdkComponent: 'worker', taskQueue: 'billing' }
+[start:billing-worker ] 2025-06-24T16:52:30.437Z [INFO] Workflow bundle created { sdkComponent: 'worker', taskQueue: 'billing', size: '0.94MB' }
+[start:order-worker   ] 2025-06-24T16:52:30.905Z [INFO] asset workflow-bundle-670770568f74a1424065.js 1000 KiB [emitted] [immutable] (name: main)
+[start:order-worker   ] runtime modules 670 bytes 3 modules
+[start:order-worker   ] modules by path ./node_modules/@temporalio/ 237 KiB
+[start:order-worker   ]   modules by path ./node_modules/@temporalio/common/ 98.7 KiB 24 modules
+[start:order-worker   ]   modules by path ./node_modules/@temporalio/workflow/ 138 KiB
+[start:order-worker   ]     ./node_modules/@temporalio/workflow/lib/worker-interface.js 8.38 KiB [built] [code generated]
+[start:order-worker   ]     ./node_modules/@temporalio/workflow/lib/global-overrides.js 4.09 KiB [built] [code generated]
+[start:order-worker   ]     ./node_modules/@temporalio/workflow/lib/cancellation-scope.js 9.92 KiB [built] [code generated]
+[start:order-worker   ]     + 16 modules
+[start:order-worker   ] modules by path ./src/temporal/lib/order/ 11.5 KiB
+[start:order-worker   ]   ./src/temporal/lib/order/workflows-autogenerated-entrypoint.cjs 489 bytes [built] [code generated]
+[start:order-worker   ]   ./src/temporal/lib/order/workflows.js 11.1 KiB [built] [code generated]
+[start:order-worker   ] __temporal_custom_payload_converter (ignored) 15 bytes [built] [code generated]
+[start:order-worker   ] __temporal_custom_failure_converter (ignored) 15 bytes [built] [code generated]
+[start:order-worker   ] ./node_modules/long/umd/index.js 49.8 KiB [built] [code generated]
+[start:order-worker   ] webpack 5.99.8 compiled successfully in 2601 ms { sdkComponent: 'worker', taskQueue: 'orders' }
+[start:order-worker   ] 2025-06-24T16:52:30.910Z [INFO] Workflow bundle created { sdkComponent: 'worker', taskQueue: 'orders', size: '0.98MB' }
+[start:billing-worker ] 2025-06-24T16:52:31.050Z [INFO] Worker state changed { sdkComponent: 'worker', taskQueue: 'billing', state: 'RUNNING' }
+[start:order-worker   ] 2025-06-24T16:52:31.347Z [INFO] Worker state changed { sdkComponent: 'worker', taskQueue: 'orders', state: 'RUNNING' }
+[start:shipment-worker] 2025-06-24T16:52:31.349Z [INFO] asset workflow-bundle-98ba656e139c73c92654.js 2.13 MiB [emitted] [immutable] (name: main)
+[start:shipment-worker] runtime modules 670 bytes 3 modules
+[start:shipment-worker] modules by path ./node_modules/@temporalio/ 237 KiB
+[start:shipment-worker]   modules by path ./node_modules/@temporalio/common/ 98.7 KiB 24 modules
+[start:shipment-worker]   modules by path ./node_modules/@temporalio/workflow/ 138 KiB
+[start:shipment-worker]     ./node_modules/@temporalio/workflow/lib/worker-interface.js 8.38 KiB [built] [code generated]
+[start:shipment-worker]     ./node_modules/@temporalio/workflow/lib/global-overrides.js 4.09 KiB [built] [code generated]
+[start:shipment-worker]     + 17 modules
+[start:shipment-worker] modules by path ./src/temporal/lib/shipment/ 3.09 KiB
+[start:shipment-worker]   ./src/temporal/lib/shipment/workflows-autogenerated-entrypoint.cjs 492 bytes [built] [code generated]
+[start:shipment-worker]   ./src/temporal/lib/shipment/workflows.js 2.61 KiB [built] [code generated]
+[start:shipment-worker] __temporal_custom_payload_converter (ignored) 15 bytes [built] [code generated]
+[start:shipment-worker] __temporal_custom_failure_converter (ignored) 15 bytes [built] [code generated]
+[start:shipment-worker] ./node_modules/@js-temporal/polyfill/dist/index.esm.js 126 KiB [built] [code generated]
+[start:shipment-worker] ./node_modules/long/umd/index.js 49.8 KiB [built] [code generated]
+[start:shipment-worker] ./node_modules/jsbi/dist/jsbi-umd.js 34.4 KiB [built] [code generated]
+[start:shipment-worker] webpack 5.99.8 compiled successfully in 2967 ms { sdkComponent: 'worker', taskQueue: 'shipments' }
+[start:shipment-worker] 2025-06-24T16:52:31.356Z [INFO] Workflow bundle created { sdkComponent: 'worker', taskQueue: 'shipments', size: '2.13MB' }
+[start:shipment-worker] 2025-06-24T16:52:31.979Z [INFO] Worker state changed { sdkComponent: 'worker', taskQueue: 'shipments', state: 'RUNNING' }
+[dev:next             ]  GET /orders/new 200 in 57ms
+[dev:next             ] {
+[dev:next             ]   "order": "{\"id\":\"A2-1750783972664\",\"customerId\":\"1234\",\"items\":[{\"sku\":\"Reebok Classic Leather White\",\"description\":\"The Reebok Classic Leather combines timeless style with modern comfort, featuring premium materials and cutting-edge technology for unmatched performance.\",\"quantity\":1},{\"sku\":\"New Balance 574\",\"description\":\"This latest version of the New Balance 574, Model 15, combines heritage styling with modern technology for an improved fit and function.\",\"quantity\":1},{\"sku\":\"Nike Air Force Ones\",\"description\":\"A second iteration of the classic, the Nike Air Force Ones Model 11 is redesigned for the modern athlete, offering enhanced cushioning and durability.\",\"quantity\":3}]}"
+[dev:next             ] }
+[dev:next             ] {
+[dev:next             ]   "id": "A2-1750783972664",
+[dev:next             ]   "customerId": "1234",
+[dev:next             ]   "items": [
+[dev:next             ]     {
+[dev:next             ]       "sku": "Reebok Classic Leather White",
+[dev:next             ]       "description": "The Reebok Classic Leather combines timeless style with modern comfort, featuring premium materials and cutting-edge technology for unmatched performance.",
+[dev:next             ]       "quantity": 1
+[dev:next             ]     },
+[dev:next             ]     {
+[dev:next             ]       "sku": "New Balance 574",
+[dev:next             ]       "description": "This latest version of the New Balance 574, Model 15, combines heritage styling with modern technology for an improved fit and function.",
+[dev:next             ]       "quantity": 1
+[dev:next             ]     },
+[dev:next             ]     {
+[dev:next             ]       "sku": "Nike Air Force Ones",
+[dev:next             ]       "description": "A second iteration of the classic, the Nike Air Force Ones Model 11 is redesigned for the modern athlete, offering enhanced cushioning and durability.",
+[dev:next             ]       "quantity": 3
+[dev:next             ]     }
+[dev:next             ]   ]
+[dev:next             ] }
+[dev:next             ] Workflow started successfully: {
+[dev:next             ]   client: WorkflowClient {
+[dev:next             ]     connection: Connection {
+[dev:next             ]       options: [Object],
+[dev:next             ]       client: [ServiceClientImpl],
+[dev:next             ]       workflowService: [Service],
+[dev:next             ]       operatorService: [Service],
+[dev:next             ]       healthService: [Service],
+[dev:next             ]       callContextStorage: [AsyncLocalStorage],
+[dev:next             ]       apiKeyFnRef: {}
+[dev:next             ]     },
+[dev:next             ]     loadedDataConverter: {
+[dev:next             ]       payloadConverter: [DefaultPayloadConverter],
+[dev:next             ]       failureConverter: [DefaultFailureConverter],
+[dev:next             ]       payloadCodecs: []
+[dev:next             ]     },
+[dev:next             ]     options: {
+[dev:next             ]       dataConverter: [Object],
+[dev:next             ]       identity: '56437@Jeffs-MacBook-Pro.local',
+[dev:next             ]       namespace: 'default',
+[dev:next             ]       interceptors: [],
+[dev:next             ]       queryRejectCondition: 'NONE',
+[dev:next             ]       connection: [Connection],
+[dev:next             ]       loadedDataConverter: [Object]
+[dev:next             ]     }
+[dev:next             ]   },
+[dev:next             ]   workflowId: 'A2-1750783972664',
+[dev:next             ]   result: [AsyncFunction: result],
+[dev:next             ]   terminate: [AsyncFunction: terminate],
+[dev:next             ]   cancel: [AsyncFunction: cancel],
+[dev:next             ]   describe: [AsyncFunction: describe],
+[dev:next             ]   fetchHistory: [AsyncFunction: fetchHistory],
+[dev:next             ]   startUpdate: [AsyncFunction: startUpdate],
+[dev:next             ]   executeUpdate: [AsyncFunction: executeUpdate],
+[dev:next             ]   getUpdateHandle: [Function: getUpdateHandle],
+[dev:next             ]   signal: [AsyncFunction: signal],
+[dev:next             ]   query: [AsyncFunction: query],
+[dev:next             ]   firstExecutionRunId: 'b1db16bb-11ba-427c-94f9-1bdf4b060598'
+[dev:next             ] }
+[dev:next             ] Workflow result: undefined
+[start:order-worker   ] 2025-06-24T16:52:57.383Z [INFO] Order: {
+[start:order-worker   ]   "id": "A2-1750783972664",
+[start:order-worker   ]   "customerId": "1234",
+[start:order-worker   ]   "items": [
+[start:order-worker   ]     {
+[start:order-worker   ]       "sku": "Reebok Classic Leather White",
+[start:order-worker   ]       "quantity": 1
+[start:order-worker   ]     },
+[start:order-worker   ]     {
+[start:order-worker   ]       "sku": "New Balance 574",
+[start:order-worker   ]       "quantity": 1
+[start:order-worker   ]     },
+[start:order-worker   ]     {
+[start:order-worker   ]       "sku": "Nike Air Force Ones",
+[start:order-worker   ]       "quantity": 3
+[start:order-worker   ]     }
+[start:order-worker   ]   ],
+[start:order-worker   ]   "receivedAt": "2025-06-24T16:52:57.177Z",
+[start:order-worker   ]   "status": "pending"
+[start:order-worker   ] } created! {
+[start:order-worker   ]   sdkComponent: 'workflow',
+[start:order-worker   ]   taskQueue: 'orders',
+[start:order-worker   ]   namespace: 'default',
+[start:order-worker   ]   workflowId: 'A2-1750783972664',
+[start:order-worker   ]   runId: 'b1db16bb-11ba-427c-94f9-1bdf4b060598',
+[start:order-worker   ]   workflowType: 'order'
+[start:order-worker   ] }
+[start:order-worker   ] 2025-06-24T16:52:57.405Z [INFO] reserveItems: {
+[start:order-worker   ]   "orderId": "A2-1750783972664",
+[start:order-worker   ]   "items": [
+[start:order-worker   ]     {
+[start:order-worker   ]       "sku": "Reebok Classic Leather White",
+[start:order-worker   ]       "quantity": 1
+[start:order-worker   ]     },
+[start:order-worker   ]     {
+[start:order-worker   ]       "sku": "New Balance 574",
+[start:order-worker   ]       "quantity": 1
+[start:order-worker   ]     },
+[start:order-worker   ]     {
+[start:order-worker   ]       "sku": "Nike Air Force Ones",
+[start:order-worker   ]       "quantity": 3
+[start:order-worker   ]     }
+[start:order-worker   ]   ]
+[start:order-worker   ] } {
+[start:order-worker   ]   sdkComponent: 'activity',
+[start:order-worker   ]   taskQueue: 'orders',
+[start:order-worker   ]   isLocal: false,
+[start:order-worker   ]   attempt: 1,
+[start:order-worker   ]   namespace: 'default',
+[start:order-worker   ]   taskToken: 'CiQ2MTEyM2U3OC01NjZlLTQwOWYtYTczOC1lNDMxOTVlZmU2MDkSEEEyLTE3NTA3ODM5NzI2NjQaJGIxZGIxNmJiLTExYmEtNDI3Yy05NGY5LTFiZGY0YjA2MDU5OCAFKAEyATFCDHJlc2VydmVJdGVtc0oICAEQhINAGAE=',
+[start:order-worker   ]   workflowId: 'A2-1750783972664',
+[start:order-worker   ]   workflowRunId: 'b1db16bb-11ba-427c-94f9-1bdf4b060598',
+[start:order-worker   ]   workflowType: 'order',
+[start:order-worker   ]   activityId: '1',
+[start:order-worker   ]   activityType: 'reserveItems'
+[start:order-worker   ] }
+[start:order-worker   ] 2025-06-24T16:52:57.438Z [INFO] Reservations: [
+[start:order-worker   ]   {
+[start:order-worker   ]     "available": true,
+[start:order-worker   ]     "location": "store",
+[start:order-worker   ]     "items": [
+[start:order-worker   ]       {
+[start:order-worker   ]         "sku": "Nike Air Force Ones",
+[start:order-worker   ]         "quantity": 3
+[start:order-worker   ]       }
+[start:order-worker   ]     ]
+[start:order-worker   ]   },
+[start:order-worker   ]   {
+[start:order-worker   ]     "available": true,
+[start:order-worker   ]     "location": "warehouse",
+[start:order-worker   ]     "items": [
+[start:order-worker   ]       {
+[start:order-worker   ]         "sku": "Reebok Classic Leather White",
+[start:order-worker   ]         "quantity": 1
+[start:order-worker   ]       },
+[start:order-worker   ]       {
+[start:order-worker   ]         "sku": "New Balance 574",
+[start:order-worker   ]         "quantity": 1
+[start:order-worker   ]       }
+[start:order-worker   ]     ]
+[start:order-worker   ]   }
+[start:order-worker   ] ] {
+[start:order-worker   ]   sdkComponent: 'workflow',
+[start:order-worker   ]   taskQueue: 'orders',
+[start:order-worker   ]   namespace: 'default',
+[start:order-worker   ]   workflowId: 'A2-1750783972664',
+[start:order-worker   ]   runId: 'b1db16bb-11ba-427c-94f9-1bdf4b060598',
+[start:order-worker   ]   workflowType: 'order'
+[start:order-worker   ] }
+[dev:next             ] Inserted order: 1
+[dev:next             ]  GET /orders/A2-1750783972664 200 in 51ms
+[dev:next             ]  POST /orders/new 303 in 516ms
+[dev:next             ] Fetched order: {
+[dev:next             ]   "id": "A2-1750783972664",
+[dev:next             ]   "customerId": "1234",
+[dev:next             ]   "items": [
+[dev:next             ]     {
+[dev:next             ]       "sku": "Reebok Classic Leather White",
+[dev:next             ]       "quantity": 1
+[dev:next             ]     },
+[dev:next             ]     {
+[dev:next             ]       "sku": "New Balance 574",
+[dev:next             ]       "quantity": 1
+[dev:next             ]     },
+[dev:next             ]     {
+[dev:next             ]       "sku": "Nike Air Force Ones",
+[dev:next             ]       "quantity": 3
+[dev:next             ]     }
+[dev:next             ]   ],
+[dev:next             ]   "receivedAt": "2025-06-24T16:52:57.177Z",
+[dev:next             ]   "status": "pending",
+[dev:next             ]   "fulfillments": [
+[dev:next             ]     {
+[dev:next             ]       "orderId": "A2-1750783972664",
+[dev:next             ]       "customerId": "1234",
+[dev:next             ]       "id": "A2-1750783972664:1",
+[dev:next             ]       "items": [
+[dev:next             ]         {
+[dev:next             ]           "sku": "Nike Air Force Ones",
+[dev:next             ]           "quantity": 3
+[dev:next             ]         }
+[dev:next             ]       ],
+[dev:next             ]       "location": "store",
+[dev:next             ]       "status": "pending"
+[dev:next             ]     },
+[dev:next             ]     {
+[dev:next             ]       "orderId": "A2-1750783972664",
+[dev:next             ]       "customerId": "1234",
+[dev:next             ]       "id": "A2-1750783972664:2",
+[dev:next             ]       "items": [
+[dev:next             ]         {
+[dev:next             ]           "sku": "Reebok Classic Leather White",
+[dev:next             ]           "quantity": 1
+[dev:next             ]         },
+[dev:next             ]         {
+[dev:next             ]           "sku": "New Balance 574",
+[dev:next             ]           "quantity": 1
+[dev:next             ]         }
+[dev:next             ]       ],
+[dev:next             ]       "location": "warehouse",
+[dev:next             ]       "status": "pending"
+[dev:next             ]     }
+[dev:next             ]   ]
+[dev:next             ] }
+[dev:next             ]  POST /orders/A2-1750783972664 200 in 75ms
+[start:order-worker   ] 2025-06-24T16:52:57.879Z [INFO] Starting fulfillment workflow for: A2-1750783972664:1 {
+[start:order-worker   ]   sdkComponent: 'workflow',
+[start:order-worker   ]   taskQueue: 'orders',
+[start:order-worker   ]   namespace: 'default',
+[start:order-worker   ]   workflowId: 'A2-1750783972664',
+[start:order-worker   ]   runId: 'b1db16bb-11ba-427c-94f9-1bdf4b060598',
+[start:order-worker   ]   workflowType: 'order'
+[start:order-worker   ] }
+[start:order-worker   ] 2025-06-24T16:52:57.880Z [INFO] Starting fulfillment workflow for: A2-1750783972664:2 {
+[start:order-worker   ]   sdkComponent: 'workflow',
+[start:order-worker   ]   taskQueue: 'orders',
+[start:order-worker   ]   namespace: 'default',
+[start:order-worker   ]   workflowId: 'A2-1750783972664',
+[start:order-worker   ]   runId: 'b1db16bb-11ba-427c-94f9-1bdf4b060598',
+[start:order-worker   ]   workflowType: 'order'
+[start:order-worker   ] }
+[dev:next             ] Fetched order: {
+[dev:next             ]   "id": "A2-1750783972664",
+[dev:next             ]   "customerId": "1234",
+[dev:next             ]   "items": [
+[dev:next             ]     {
+[dev:next             ]       "sku": "Reebok Classic Leather White",
+[dev:next             ]       "quantity": 1
+[dev:next             ]     },
+[dev:next             ]     {
+[dev:next             ]       "sku": "New Balance 574",
+[dev:next             ]       "quantity": 1
+[dev:next             ]     },
+[dev:next             ]     {
+[dev:next             ]       "sku": "Nike Air Force Ones",
+[dev:next             ]       "quantity": 3
+[dev:next             ]     }
+[dev:next             ]   ],
+[dev:next             ]   "receivedAt": "2025-06-24T16:52:57.177Z",
+[dev:next             ]   "status": "pending",
+[dev:next             ]   "fulfillments": [
+[dev:next             ]     {
+[dev:next             ]       "orderId": "A2-1750783972664",
+[dev:next             ]       "customerId": "1234",
+[dev:next             ]       "id": "A2-1750783972664:1",
+[dev:next             ]       "items": [
+[dev:next             ]         {
+[dev:next             ]           "sku": "Nike Air Force Ones",
+[dev:next             ]           "quantity": 3
+[dev:next             ]         }
+[dev:next             ]       ],
+[dev:next             ]       "location": "store",
+[dev:next             ]       "status": "pending"
+[dev:next             ]     },
+[dev:next             ]     {
+[dev:next             ]       "orderId": "A2-1750783972664",
+[dev:next             ]       "customerId": "1234",
+[dev:next             ]       "id": "A2-1750783972664:2",
+[dev:next             ]       "items": [
+[dev:next             ]         {
+[dev:next             ]           "sku": "Reebok Classic Leather White",
+[dev:next             ]           "quantity": 1
+[dev:next             ]         },
+[dev:next             ]         {
+[dev:next             ]           "sku": "New Balance 574",
+[dev:next             ]           "quantity": 1
+[dev:next             ]         }
+[dev:next             ]       ],
+[dev:next             ]       "location": "warehouse",
+[dev:next             ]       "status": "pending"
+[dev:next             ]     }
+[dev:next             ]   ]
+[dev:next             ] }
+[dev:next             ]  POST /orders/A2-1750783972664 200 in 165ms
+[start:order-worker   ] 2025-06-24T16:52:58.015Z [INFO] processFulfillment(A2-1750783972664:2) {
+[start:order-worker   ]   sdkComponent: 'workflow',
+[start:order-worker   ]   taskQueue: 'orders',
+[start:order-worker   ]   namespace: 'default',
+[start:order-worker   ]   workflowId: 'fulfill-A2-1750783972664:2',
+[start:order-worker   ]   runId: 'c53d9f34-c943-4850-98ce-de497a5ec93b',
+[start:order-worker   ]   workflowType: 'fulfill'
+[start:order-worker   ] }
+[start:order-worker   ] 2025-06-24T16:52:58.015Z [INFO] processPayment: {
+[start:order-worker   ]   "orderId": "A2-1750783972664",
+[start:order-worker   ]   "customerId": "1234",
+[start:order-worker   ]   "id": "A2-1750783972664:2",
+[start:order-worker   ]   "items": [
+[start:order-worker   ]     {
+[start:order-worker   ]       "sku": "Reebok Classic Leather White",
+[start:order-worker   ]       "quantity": 1
+[start:order-worker   ]     },
+[start:order-worker   ]     {
+[start:order-worker   ]       "sku": "New Balance 574",
+[start:order-worker   ]       "quantity": 1
+[start:order-worker   ]     }
+[start:order-worker   ]   ],
+[start:order-worker   ]   "location": "warehouse",
+[start:order-worker   ]   "status": "pending"
+[start:order-worker   ] } {
+[start:order-worker   ]   sdkComponent: 'workflow',
+[start:order-worker   ]   taskQueue: 'orders',
+[start:order-worker   ]   namespace: 'default',
+[start:order-worker   ]   workflowId: 'fulfill-A2-1750783972664:2',
+[start:order-worker   ]   runId: 'c53d9f34-c943-4850-98ce-de497a5ec93b',
+[start:order-worker   ]   workflowType: 'fulfill'
+[start:order-worker   ] }
+[start:order-worker   ] 2025-06-24T16:52:58.015Z [INFO] charge: workflowId: charge-fulfill-A2-1750783972664:2-85154483-fc80-4619-ad22-6daa996cdb65 {
+[start:order-worker   ]   sdkComponent: 'workflow',
+[start:order-worker   ]   taskQueue: 'orders',
+[start:order-worker   ]   namespace: 'default',
+[start:order-worker   ]   workflowId: 'fulfill-A2-1750783972664:2',
+[start:order-worker   ]   runId: 'c53d9f34-c943-4850-98ce-de497a5ec93b',
+[start:order-worker   ]   workflowType: 'fulfill'
+[start:order-worker   ] }
+[start:order-worker   ] 2025-06-24T16:52:58.017Z [INFO] processFulfillment(A2-1750783972664:1) {
+[start:order-worker   ]   sdkComponent: 'workflow',
+[start:order-worker   ]   taskQueue: 'orders',
+[start:order-worker   ]   namespace: 'default',
+[start:order-worker   ]   workflowId: 'fulfill-A2-1750783972664:1',
+[start:order-worker   ]   runId: '6261a3a1-5840-4471-a1ca-e0be9afa9465',
+[start:order-worker   ]   workflowType: 'fulfill'
+[start:order-worker   ] }
+[start:order-worker   ] 2025-06-24T16:52:58.018Z [INFO] processPayment: {
+[start:order-worker   ]   "orderId": "A2-1750783972664",
+[start:order-worker   ]   "customerId": "1234",
+[start:order-worker   ]   "id": "A2-1750783972664:1",
+[start:order-worker   ]   "items": [
+[start:order-worker   ]     {
+[start:order-worker   ]       "sku": "Nike Air Force Ones",
+[start:order-worker   ]       "quantity": 3
+[start:order-worker   ]     }
+[start:order-worker   ]   ],
+[start:order-worker   ]   "location": "store",
+[start:order-worker   ]   "status": "pending"
+[start:order-worker   ] } {
+[start:order-worker   ]   sdkComponent: 'workflow',
+[start:order-worker   ]   taskQueue: 'orders',
+[start:order-worker   ]   namespace: 'default',
+[start:order-worker   ]   workflowId: 'fulfill-A2-1750783972664:1',
+[start:order-worker   ]   runId: '6261a3a1-5840-4471-a1ca-e0be9afa9465',
+[start:order-worker   ]   workflowType: 'fulfill'
+[start:order-worker   ] }
+[start:order-worker   ] 2025-06-24T16:52:58.018Z [INFO] charge: workflowId: charge-fulfill-A2-1750783972664:1-01bb1c8f-6a00-4743-8247-ebdb4b84fe48 {
+[start:order-worker   ]   sdkComponent: 'workflow',
+[start:order-worker   ]   taskQueue: 'orders',
+[start:order-worker   ]   namespace: 'default',
+[start:order-worker   ]   workflowId: 'fulfill-A2-1750783972664:1',
+[start:order-worker   ]   runId: '6261a3a1-5840-4471-a1ca-e0be9afa9465',
+[start:order-worker   ]   workflowType: 'fulfill'
+[start:order-worker   ] }
+[dev:next             ] Debugger attached.
+[start:billing-worker ] 2025-06-24T16:52:58.320Z [INFO] charge({"customerId":"1234","reference":"01bb1c8f-6a00-4743-8247-ebdb4b84fe48","items":[{"sku":"Nike Air Force Ones","quantity":3}],"idempotencyKey":"01bb1c8f-6a00-4743-8247-ebdb4b84fe48"}): {"invoiceReference":"01bb1c8f-6a00-4743-8247-ebdb4b84fe48","subTotal":32388,"shipping":1686,"tax":6477,"total":38865} {
+[start:billing-worker ]   sdkComponent: 'workflow',
+[start:billing-worker ]   taskQueue: 'billing',
+[start:billing-worker ]   namespace: 'default',
+[start:billing-worker ]   workflowId: 'charge-fulfill-A2-1750783972664:1-01bb1c8f-6a00-4743-8247-ebdb4b84fe48',
+[start:billing-worker ]   runId: '569f3f15-1f60-4df5-8aae-a0a3e4f45b92',
+[start:billing-worker ]   workflowType: 'charge'
+[start:billing-worker ] }
+[start:billing-worker ] 2025-06-24T16:52:58.331Z [INFO] charge({"customerId":"1234","reference":"85154483-fc80-4619-ad22-6daa996cdb65","items":[{"sku":"Reebok Classic Leather White","quantity":1},{"sku":"New Balance 574","quantity":1}],"idempotencyKey":"85154483-fc80-4619-ad22-6daa996cdb65"}): {"invoiceReference":"85154483-fc80-4619-ad22-6daa996cdb65","subTotal":15770,"shipping":1617,"tax":3153,"total":18923} {
+[start:billing-worker ]   sdkComponent: 'workflow',
+[start:billing-worker ]   taskQueue: 'billing',
+[start:billing-worker ]   namespace: 'default',
+[start:billing-worker ]   workflowId: 'charge-fulfill-A2-1750783972664:2-85154483-fc80-4619-ad22-6daa996cdb65',
+[start:billing-worker ]   runId: '4e38988c-456a-4677-8bc7-1dcdfdcae458',
+[start:billing-worker ]   workflowType: 'charge'
+[start:billing-worker ] }
+[start:order-worker   ] 2025-06-24T16:52:58.438Z [INFO] charge workflow result: {"invoiceReference":"01bb1c8f-6a00-4743-8247-ebdb4b84fe48","subTotal":32388,"shipping":1686,"tax":6477,"total":38865,"success":true,"authCode":"123456789"} {
+[start:order-worker   ]   sdkComponent: 'workflow',
+[start:order-worker   ]   taskQueue: 'orders',
+[start:order-worker   ]   namespace: 'default',
+[start:order-worker   ]   workflowId: 'fulfill-A2-1750783972664:1',
+[start:order-worker   ]   runId: '6261a3a1-5840-4471-a1ca-e0be9afa9465',
+[start:order-worker   ]   workflowType: 'fulfill'
+[start:order-worker   ] }
+[start:order-worker   ] 2025-06-24T16:52:58.438Z [INFO] processShipment: {
+[start:order-worker   ]   "orderId": "A2-1750783972664",
+[start:order-worker   ]   "customerId": "1234",
+[start:order-worker   ]   "id": "A2-1750783972664:1",
+[start:order-worker   ]   "items": [
+[start:order-worker   ]     {
+[start:order-worker   ]       "sku": "Nike Air Force Ones",
+[start:order-worker   ]       "quantity": 3
+[start:order-worker   ]     }
+[start:order-worker   ]   ],
+[start:order-worker   ]   "location": "store",
+[start:order-worker   ]   "status": "pending"
+[start:order-worker   ] } {
+[start:order-worker   ]   sdkComponent: 'workflow',
+[start:order-worker   ]   taskQueue: 'orders',
+[start:order-worker   ]   namespace: 'default',
+[start:order-worker   ]   workflowId: 'fulfill-A2-1750783972664:1',
+[start:order-worker   ]   runId: '6261a3a1-5840-4471-a1ca-e0be9afa9465',
+[start:order-worker   ]   workflowType: 'fulfill'
+[start:order-worker   ] }
+[start:order-worker   ] 2025-06-24T16:52:58.438Z [INFO] shipmentInput: {
+[start:order-worker   ]   "requestorWorkflowId": "fulfill-A2-1750783972664:1",
+[start:order-worker   ]   "id": "A2-1750783972664:1",
+[start:order-worker   ]   "items": [
+[start:order-worker   ]     {
+[start:order-worker   ]       "sku": "Nike Air Force Ones",
+[start:order-worker   ]       "quantity": 3
+[start:order-worker   ]     }
+[start:order-worker   ]   ]
+[start:order-worker   ] } {
+[start:order-worker   ]   sdkComponent: 'workflow',
+[start:order-worker   ]   taskQueue: 'orders',
+[start:order-worker   ]   namespace: 'default',
+[start:order-worker   ]   workflowId: 'fulfill-A2-1750783972664:1',
+[start:order-worker   ]   runId: '6261a3a1-5840-4471-a1ca-e0be9afa9465',
+[start:order-worker   ]   workflowType: 'fulfill'
+[start:order-worker   ] }
+[start:order-worker   ] 2025-06-24T16:52:58.438Z [INFO] ship: workflowId: ship-A2-1750783972664:1 {
+[start:order-worker   ]   sdkComponent: 'workflow',
+[start:order-worker   ]   taskQueue: 'orders',
+[start:order-worker   ]   namespace: 'default',
+[start:order-worker   ]   workflowId: 'fulfill-A2-1750783972664:1',
+[start:order-worker   ]   runId: '6261a3a1-5840-4471-a1ca-e0be9afa9465',
+[start:order-worker   ]   workflowType: 'fulfill'
+[start:order-worker   ] }
+[start:order-worker   ] 2025-06-24T16:52:58.441Z [INFO] charge workflow result: {"invoiceReference":"85154483-fc80-4619-ad22-6daa996cdb65","subTotal":15770,"shipping":1617,"tax":3153,"total":18923,"success":true,"authCode":"123456789"} {
+[start:order-worker   ]   sdkComponent: 'workflow',
+[start:order-worker   ]   taskQueue: 'orders',
+[start:order-worker   ]   namespace: 'default',
+[start:order-worker   ]   workflowId: 'fulfill-A2-1750783972664:2',
+[start:order-worker   ]   runId: 'c53d9f34-c943-4850-98ce-de497a5ec93b',
+[start:order-worker   ]   workflowType: 'fulfill'
+[start:order-worker   ] }
+[start:order-worker   ] 2025-06-24T16:52:58.441Z [INFO] processShipment: {
+[start:order-worker   ]   "orderId": "A2-1750783972664",
+[start:order-worker   ]   "customerId": "1234",
+[start:order-worker   ]   "id": "A2-1750783972664:2",
+[start:order-worker   ]   "items": [
+[start:order-worker   ]     {
+[start:order-worker   ]       "sku": "Reebok Classic Leather White",
+[start:order-worker   ]       "quantity": 1
+[start:order-worker   ]     },
+[start:order-worker   ]     {
+[start:order-worker   ]       "sku": "New Balance 574",
+[start:order-worker   ]       "quantity": 1
+[start:order-worker   ]     }
+[start:order-worker   ]   ],
+[start:order-worker   ]   "location": "warehouse",
+[start:order-worker   ]   "status": "pending"
+[start:order-worker   ] } {
+[start:order-worker   ]   sdkComponent: 'workflow',
+[start:order-worker   ]   taskQueue: 'orders',
+[start:order-worker   ]   namespace: 'default',
+[start:order-worker   ]   workflowId: 'fulfill-A2-1750783972664:2',
+[start:order-worker   ]   runId: 'c53d9f34-c943-4850-98ce-de497a5ec93b',
+[start:order-worker   ]   workflowType: 'fulfill'
+[start:order-worker   ] }
+[start:order-worker   ] 2025-06-24T16:52:58.441Z [INFO] shipmentInput: {
+[start:order-worker   ]   "requestorWorkflowId": "fulfill-A2-1750783972664:2",
+[start:order-worker   ]   "id": "A2-1750783972664:2",
+[start:order-worker   ]   "items": [
+[start:order-worker   ]     {
+[start:order-worker   ]       "sku": "Reebok Classic Leather White",
+[start:order-worker   ]       "quantity": 1
+[start:order-worker   ]     },
+[start:order-worker   ]     {
+[start:order-worker   ]       "sku": "New Balance 574",
+[start:order-worker   ]       "quantity": 1
+[start:order-worker   ]     }
+[start:order-worker   ]   ]
+[start:order-worker   ] } {
+[start:order-worker   ]   sdkComponent: 'workflow',
+[start:order-worker   ]   taskQueue: 'orders',
+[start:order-worker   ]   namespace: 'default',
+[start:order-worker   ]   workflowId: 'fulfill-A2-1750783972664:2',
+[start:order-worker   ]   runId: 'c53d9f34-c943-4850-98ce-de497a5ec93b',
+[start:order-worker   ]   workflowType: 'fulfill'
+[start:order-worker   ] }
+[start:order-worker   ] 2025-06-24T16:52:58.442Z [INFO] ship: workflowId: ship-A2-1750783972664:2 {
+[start:order-worker   ]   sdkComponent: 'workflow',
+[start:order-worker   ]   taskQueue: 'orders',
+[start:order-worker   ]   namespace: 'default',
+[start:order-worker   ]   workflowId: 'fulfill-A2-1750783972664:2',
+[start:order-worker   ]   runId: 'c53d9f34-c943-4850-98ce-de497a5ec93b',
+[start:order-worker   ]   workflowType: 'fulfill'
+[start:order-worker   ] }
+[start:shipment-worker] 2025-06-24T16:52:58.691Z [INFO] ship: {
+[start:shipment-worker]   "requestorWorkflowId": "fulfill-A2-1750783972664:1",
+[start:shipment-worker]   "id": "A2-1750783972664:1",
+[start:shipment-worker]   "items": [
+[start:shipment-worker]     {
+[start:shipment-worker]       "sku": "Nike Air Force Ones",
+[start:shipment-worker]       "quantity": 3
+[start:shipment-worker]     }
+[start:shipment-worker]   ]
+[start:shipment-worker] } {
+[start:shipment-worker]   sdkComponent: 'workflow',
+[start:shipment-worker]   taskQueue: 'shipments',
+[start:shipment-worker]   namespace: 'default',
+[start:shipment-worker]   workflowId: 'ship-A2-1750783972664:1',
+[start:shipment-worker]   runId: 'c74a9ff4-3412-4ef3-9f78-0cc0adb74902',
+[start:shipment-worker]   workflowType: 'ship'
+[start:shipment-worker] }
+[start:shipment-worker] 2025-06-24T16:52:58.692Z [INFO] ship: {
+[start:shipment-worker]   "requestorWorkflowId": "fulfill-A2-1750783972664:2",
+[start:shipment-worker]   "id": "A2-1750783972664:2",
+[start:shipment-worker]   "items": [
+[start:shipment-worker]     {
+[start:shipment-worker]       "sku": "Reebok Classic Leather White",
+[start:shipment-worker]       "quantity": 1
+[start:shipment-worker]     },
+[start:shipment-worker]     {
+[start:shipment-worker]       "sku": "New Balance 574",
+[start:shipment-worker]       "quantity": 1
+[start:shipment-worker]     }
+[start:shipment-worker]   ]
+[start:shipment-worker] } {
+[start:shipment-worker]   sdkComponent: 'workflow',
+[start:shipment-worker]   taskQueue: 'shipments',
+[start:shipment-worker]   namespace: 'default',
+[start:shipment-worker]   workflowId: 'ship-A2-1750783972664:2',
+[start:shipment-worker]   runId: 'ed49d5a3-e60a-43fd-9721-9492aec2311a',
+[start:shipment-worker]   workflowType: 'ship'
+[start:shipment-worker] }
+[dev:next             ] Waiting for the debugger to disconnect...
+[dev:next             ]  GET /orders/A1-1750783449972 200 in 268ms
+[dev:next             ] Debugger attached.
+[dev:next             ] Fetched order: {
+[dev:next             ]   "id": "A1-1750783449972",
+[dev:next             ]   "customerId": "1234",
+[dev:next             ]   "items": [
+[dev:next             ]     {
+[dev:next             ]       "sku": "Vans Old Skool",
+[dev:next             ]       "quantity": 1
+[dev:next             ]     }
+[dev:next             ]   ],
+[dev:next             ]   "receivedAt": "2025-06-24T16:44:13.505Z",
+[dev:next             ]   "status": "pending",
+[dev:next             ]   "fulfillments": [
+[dev:next             ]     {
+[dev:next             ]       "orderId": "A1-1750783449972",
+[dev:next             ]       "customerId": "1234",
+[dev:next             ]       "id": "A1-1750783449972:1",
+[dev:next             ]       "items": [
+[dev:next             ]         {
+[dev:next             ]           "sku": "Vans Old Skool",
+[dev:next             ]           "quantity": 1
+[dev:next             ]         }
+[dev:next             ]       ],
+[dev:next             ]       "location": "store",
+[dev:next             ]       "status": "pending"
+[dev:next             ]     }
+[dev:next             ]   ]
+[dev:next             ] }
+[dev:next             ]  POST /orders/A1-1750783449972 200 in 131ms
+[dev:next             ] Waiting for the debugger to disconnect...
+[dev:next             ]  GET /orders/new 200 in 295ms
+[dev:next             ]  GET /shipments 200 in 222ms
+[dev:next             ]  POST /shipments 200 in 67ms
+[dev:next             ]  GET /shipments 200 in 274ms
+[dev:next             ]  POST /shipments 200 in 107ms
+[dev:next             ]  GET /shipments/A2-1750783972664:1 200 in 222ms
+[dev:next             ] Debugger attached.
+[dev:next             ] Fetched shipment: {
+[dev:next             ]   "workflowId": "ship-A2-1750783972664:1",
+[dev:next             ]   "id": "A2-1750783972664:1",
+[dev:next             ]   "items": [
+[dev:next             ]     {
+[dev:next             ]       "sku": "Nike Air Force Ones",
+[dev:next             ]       "quantity": 3
+[dev:next             ]     }
+[dev:next             ]   ],
+[dev:next             ]   "status": "booked",
+[dev:next             ]   "updatedAt": "[object Temporal.Now]"
+[dev:next             ] }
+[dev:next             ]  POST /shipments/A2-1750783972664:1 200 in 97ms
+[dev:next             ] Waiting for the debugger to disconnect...
+[dev:next             ]  POST /shipments/A2-1750783972664:1 200 in 42ms
+[start:shipment-worker] 2025-06-24T16:53:36.030Z [INFO] Shipment status updated: dispatched {
+[start:shipment-worker]   sdkComponent: 'workflow',
+[start:shipment-worker]   taskQueue: 'shipments',
+[start:shipment-worker]   namespace: 'default',
+[start:shipment-worker]   workflowId: 'ship-A2-1750783972664:1',
+[start:shipment-worker]   runId: 'c74a9ff4-3412-4ef3-9f78-0cc0adb74902',
+[start:shipment-worker]   workflowType: 'ship'
+[start:shipment-worker] }
+[dev:next             ] Fetched shipment: {
+[dev:next             ]   "workflowId": "ship-A2-1750783972664:1",
+[dev:next             ]   "id": "A2-1750783972664:1",
+[dev:next             ]   "items": [
+[dev:next             ]     {
+[dev:next             ]       "sku": "Nike Air Force Ones",
+[dev:next             ]       "quantity": 3
+[dev:next             ]     }
+[dev:next             ]   ],
+[dev:next             ]   "status": "dispatched",
+[dev:next             ]   "updatedAt": "[object Temporal.Now]"
+[dev:next             ] }
+[dev:next             ]  POST /shipments/A2-1750783972664:1 200 in 97ms
+[dev:next             ] Debugger attached.
+[dev:next             ]  POST /shipments/A2-1750783972664:1 200 in 32ms
+[start:shipment-worker] 2025-06-24T16:53:37.187Z [INFO] Shipment status updated: delivered {
+[start:shipment-worker]   sdkComponent: 'workflow',
+[start:shipment-worker]   taskQueue: 'shipments',
+[start:shipment-worker]   namespace: 'default',
+[start:shipment-worker]   workflowId: 'ship-A2-1750783972664:1',
+[start:shipment-worker]   runId: 'c74a9ff4-3412-4ef3-9f78-0cc0adb74902',
+[start:shipment-worker]   workflowType: 'ship'
+[start:shipment-worker] }
+[start:shipment-worker] 2025-06-24T16:53:37.187Z [INFO] shipment delivered {
+[start:shipment-worker]   sdkComponent: 'workflow',
+[start:shipment-worker]   taskQueue: 'shipments',
+[start:shipment-worker]   namespace: 'default',
+[start:shipment-worker]   workflowId: 'ship-A2-1750783972664:1',
+[start:shipment-worker]   runId: 'c74a9ff4-3412-4ef3-9f78-0cc0adb74902',
+[start:shipment-worker]   workflowType: 'ship'
+[start:shipment-worker] }
+[start:order-worker   ] 2025-06-24T16:53:37.220Z [INFO] shipment workflow result: {"courierReference":"A2-1750783972664:1:1234"} {
+[start:order-worker   ]   sdkComponent: 'workflow',
+[start:order-worker   ]   taskQueue: 'orders',
+[start:order-worker   ]   namespace: 'default',
+[start:order-worker   ]   workflowId: 'fulfill-A2-1750783972664:1',
+[start:order-worker   ]   runId: '6261a3a1-5840-4471-a1ca-e0be9afa9465',
+[start:order-worker   ]   workflowType: 'fulfill'
+[start:order-worker   ] }
+[start:order-worker   ] 2025-06-24T16:53:37.220Z [INFO] Fulfillment A2-1750783972664:1 processed successfully {
+[start:order-worker   ]   sdkComponent: 'workflow',
+[start:order-worker   ]   taskQueue: 'orders',
+[start:order-worker   ]   namespace: 'default',
+[start:order-worker   ]   workflowId: 'fulfill-A2-1750783972664:1',
+[start:order-worker   ]   runId: '6261a3a1-5840-4471-a1ca-e0be9afa9465',
+[start:order-worker   ]   workflowType: 'fulfill'
+[start:order-worker   ] }
+[dev:next             ] Fetched shipment: {
+[dev:next             ]   "workflowId": "ship-A2-1750783972664:1",
+[dev:next             ]   "id": "A2-1750783972664:1",
+[dev:next             ]   "items": [
+[dev:next             ]     {
+[dev:next             ]       "sku": "Nike Air Force Ones",
+[dev:next             ]       "quantity": 3
+[dev:next             ]     }
+[dev:next             ]   ],
+[dev:next             ]   "status": "delivered",
+[dev:next             ]   "updatedAt": "[object Temporal.Now]"
+[dev:next             ] }
+[dev:next             ]  POST /shipments/A2-1750783972664:1 200 in 125ms
+[start:order-worker   ] 2025-06-24T16:53:37.260Z [INFO] Fulfillment workflow completed for: A2-1750783972664:1, result: Fulfillment A2-1750783972664:1 processed successfully {
+[start:order-worker   ]   sdkComponent: 'workflow',
+[start:order-worker   ]   taskQueue: 'orders',
+[start:order-worker   ]   namespace: 'default',
+[start:order-worker   ]   workflowId: 'A2-1750783972664',
+[start:order-worker   ]   runId: 'b1db16bb-11ba-427c-94f9-1bdf4b060598',
+[start:order-worker   ]   workflowType: 'order'
+[start:order-worker   ] }
+[start:shipment-worker] 2025-06-24T16:53:37.259890Z  WARN temporal_sdk_core::worker::activities: Activity not found on completion. This may happen if the activity has already been cancelled but completed anyway. task_token=TaskToken(CiQ2MTEyM2U3OC01NjZlLTQwOWYtYTczOC1lNDMxOTVlZmU2MDkSF3NoaXAtQTItMTc1MDc4Mzk3MjY2NDoxGiRjNzRhOWZmNC0zNDEyLTRlZjMtOWY3OC0wY2MwYWRiNzQ5MDIgKSgBMgE0QhR1cGRhdGVTaGlwbWVudFN0YXR1c0oICAEQ34ZAGAE=) details=Status { code: NotFound, message: "workflow execution already completed", details: b"\x08\x05\x12$workflow execution already completed\x1aB\n@type.googleapis.com/temporal.api.errordetails.v1.NotFoundFailure", metadata: MetadataMap { headers: {"content-type": "application/grpc"} }, source: None }
+[dev:next             ] Waiting for the debugger to disconnect...
+[dev:next             ]  GET /shipments 200 in 227ms
+[dev:next             ]  POST /shipments 200 in 229ms
+[dev:next             ]  GET /shipments/A2-1750783972664:2 200 in 178ms
+[dev:next             ] Debugger attached.
+[dev:next             ] Fetched shipment: {
+[dev:next             ]   "workflowId": "ship-A2-1750783972664:2",
+[dev:next             ]   "id": "A2-1750783972664:2",
+[dev:next             ]   "items": [
+[dev:next             ]     {
+[dev:next             ]       "sku": "Reebok Classic Leather White",
+[dev:next             ]       "quantity": 1
+[dev:next             ]     },
+[dev:next             ]     {
+[dev:next             ]       "sku": "New Balance 574",
+[dev:next             ]       "quantity": 1
+[dev:next             ]     }
+[dev:next             ]   ],
+[dev:next             ]   "status": "booked",
+[dev:next             ]   "updatedAt": "[object Temporal.Now]"
+[dev:next             ] }
+[dev:next             ]  POST /shipments/A2-1750783972664:2 200 in 78ms
+[dev:next             ] Waiting for the debugger to disconnect...
+[dev:next             ]  POST /shipments/A2-1750783972664:2 200 in 37ms
+[start:shipment-worker] 2025-06-24T16:53:51.781Z [INFO] Shipment status updated: dispatched {
+[start:shipment-worker]   sdkComponent: 'workflow',
+[start:shipment-worker]   taskQueue: 'shipments',
+[start:shipment-worker]   namespace: 'default',
+[start:shipment-worker]   workflowId: 'ship-A2-1750783972664:2',
+[start:shipment-worker]   runId: 'ed49d5a3-e60a-43fd-9721-9492aec2311a',
+[start:shipment-worker]   workflowType: 'ship'
+[start:shipment-worker] }
+[dev:next             ] Fetched shipment: {
+[dev:next             ]   "workflowId": "ship-A2-1750783972664:2",
+[dev:next             ]   "id": "A2-1750783972664:2",
+[dev:next             ]   "items": [
+[dev:next             ]     {
+[dev:next             ]       "sku": "Reebok Classic Leather White",
+[dev:next             ]       "quantity": 1
+[dev:next             ]     },
+[dev:next             ]     {
+[dev:next             ]       "sku": "New Balance 574",
+[dev:next             ]       "quantity": 1
+[dev:next             ]     }
+[dev:next             ]   ],
+[dev:next             ]   "status": "dispatched",
+[dev:next             ]   "updatedAt": "[object Temporal.Now]"
+[dev:next             ] }
+[dev:next             ]  POST /shipments/A2-1750783972664:2 200 in 105ms
+[dev:next             ] Debugger attached.
+[dev:next             ]  POST /shipments/A2-1750783972664:2 200 in 41ms
+[start:shipment-worker] 2025-06-24T16:53:52.696Z [INFO] Shipment status updated: delivered {
+[start:shipment-worker]   sdkComponent: 'workflow',
+[start:shipment-worker]   taskQueue: 'shipments',
+[start:shipment-worker]   namespace: 'default',
+[start:shipment-worker]   workflowId: 'ship-A2-1750783972664:2',
+[start:shipment-worker]   runId: 'ed49d5a3-e60a-43fd-9721-9492aec2311a',
+[start:shipment-worker]   workflowType: 'ship'
+[start:shipment-worker] }
+[start:shipment-worker] 2025-06-24T16:53:52.696Z [INFO] shipment delivered {
+[start:shipment-worker]   sdkComponent: 'workflow',
+[start:shipment-worker]   taskQueue: 'shipments',
+[start:shipment-worker]   namespace: 'default',
+[start:shipment-worker]   workflowId: 'ship-A2-1750783972664:2',
+[start:shipment-worker]   runId: 'ed49d5a3-e60a-43fd-9721-9492aec2311a',
+[start:shipment-worker]   workflowType: 'ship'
+[start:shipment-worker] }
+[dev:next             ] Fetched shipment: {
+[dev:next             ]   "workflowId": "ship-A2-1750783972664:2",
+[dev:next             ]   "id": "A2-1750783972664:2",
+[dev:next             ]   "items": [
+[dev:next             ]     {
+[dev:next             ]       "sku": "Reebok Classic Leather White",
+[dev:next             ]       "quantity": 1
+[dev:next             ]     },
+[dev:next             ]     {
+[dev:next             ]       "sku": "New Balance 574",
+[dev:next             ]       "quantity": 1
+[dev:next             ]     }
+[dev:next             ]   ],
+[dev:next             ]   "status": "delivered",
+[dev:next             ]   "updatedAt": "[object Temporal.Now]"
+[dev:next             ] }
+[dev:next             ]  POST /shipments/A2-1750783972664:2 200 in 89ms
+[start:order-worker   ] 2025-06-24T16:53:52.744Z [INFO] shipment workflow result: {"courierReference":"A2-1750783972664:2:1234"} {
+[start:order-worker   ]   sdkComponent: 'workflow',
+[start:order-worker   ]   taskQueue: 'orders',
+[start:order-worker   ]   namespace: 'default',
+[start:order-worker   ]   workflowId: 'fulfill-A2-1750783972664:2',
+[start:order-worker   ]   runId: 'c53d9f34-c943-4850-98ce-de497a5ec93b',
+[start:order-worker   ]   workflowType: 'fulfill'
+[start:order-worker   ] }
+[start:order-worker   ] 2025-06-24T16:53:52.744Z [INFO] Fulfillment A2-1750783972664:2 processed successfully {
+[start:order-worker   ]   sdkComponent: 'workflow',
+[start:order-worker   ]   taskQueue: 'orders',
+[start:order-worker   ]   namespace: 'default',
+[start:order-worker   ]   workflowId: 'fulfill-A2-1750783972664:2',
+[start:order-worker   ]   runId: 'c53d9f34-c943-4850-98ce-de497a5ec93b',
+[start:order-worker   ]   workflowType: 'fulfill'
+[start:order-worker   ] }
+[start:shipment-worker] 2025-06-24T16:53:52.764147Z  WARN temporal_sdk_core::worker::activities: Activity not found on completion. This may happen if the activity has already been cancelled but completed anyway. task_token=TaskToken(CiQ2MTEyM2U3OC01NjZlLTQwOWYtYTczOC1lNDMxOTVlZmU2MDkSF3NoaXAtQTItMTc1MDc4Mzk3MjY2NDoyGiRlZDQ5ZDVhMy1lNjBhLTQzZmQtOTcyMS05NDkyYWVjMjMxMWEgKSgBMgE0QhR1cGRhdGVTaGlwbWVudFN0YXR1c0oICAEQ0IdAGAE=) details=Status { code: NotFound, message: "workflow execution already completed", details: b"\x08\x05\x12$workflow execution already completed\x1aB\n@type.googleapis.com/temporal.api.errordetails.v1.NotFoundFailure", metadata: MetadataMap { headers: {"content-type": "application/grpc"} }, source: None }
+[start:order-worker   ] 2025-06-24T16:53:52.790Z [INFO] Fulfillment workflow completed for: A2-1750783972664:2, result: Fulfillment A2-1750783972664:2 processed successfully {
+[start:order-worker   ]   sdkComponent: 'workflow',
+[start:order-worker   ]   taskQueue: 'orders',
+[start:order-worker   ]   namespace: 'default',
+[start:order-worker   ]   workflowId: 'A2-1750783972664',
+[start:order-worker   ]   runId: 'b1db16bb-11ba-427c-94f9-1bdf4b060598',
+[start:order-worker   ]   workflowType: 'order'
+[start:order-worker   ] }
+[start:order-worker   ] 2025-06-24T16:53:52.790Z [INFO] Fulfillment results: [
+[start:order-worker   ]   "Fulfillment A2-1750783972664:1 processed successfully",
+[start:order-worker   ]   "Fulfillment A2-1750783972664:2 processed successfully"
+[start:order-worker   ] ] {
+[start:order-worker   ]   sdkComponent: 'workflow',
+[start:order-worker   ]   taskQueue: 'orders',
+[start:order-worker   ]   namespace: 'default',
+[start:order-worker   ]   workflowId: 'A2-1750783972664',
+[start:order-worker   ]   runId: 'b1db16bb-11ba-427c-94f9-1bdf4b060598',
+[start:order-worker   ]   workflowType: 'order'
+[start:order-worker   ] }
+[dev:next             ] Waiting for the debugger to disconnect...
+[dev:next             ]  GET /orders/new 200 in 53ms
+[dev:next             ]  GET /orders 200 in 49ms
+[dev:next             ]  POST /orders 200 in 230ms
+[dev:next             ]  POST /orders 200 in 102ms
+[dev:next             ]  GET /shipments 200 in 225ms
+[dev:next             ]  POST /shipments 200 in 245ms
+
 #+end_example

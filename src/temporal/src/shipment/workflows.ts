@@ -98,6 +98,7 @@ export async function ship(input: ShipmentInput): Promise<ShipmentResult> {
   });
 
   await wf.condition(() => shipmentContext.status === 'delivered');
+  await wf.condition(wf.allHandlersFinished);
   log.info('shipment delivered');
 
   return bookShipmentResult;
