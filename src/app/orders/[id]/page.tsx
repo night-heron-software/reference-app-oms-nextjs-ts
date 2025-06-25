@@ -13,16 +13,6 @@ import StatusBadge from '@/components/StatusBadge';
 // FIXME: need to find the correct way to share types between nextjs and temporal
 import type { OrderQueryResult } from '@/actions/client';
 
-// Assuming types are defined in a shared location, e.g., @/types/order
-// You would need to create this file and define the types.
-// Example types/order.ts:
-// export type Action = 'amend' | 'cancel';
-// export interface Order {
-//   id: string;
-//   status: string;
-//   customerId: string;
-//   // ... other properties
-// }
 import type { Action } from '@/types/order';
 import { send } from 'process';
 
@@ -39,30 +29,33 @@ export default function OrderPage(props: OrderPageProps) {
   const [pageLoading, setPageLoading] = useState(true); // For initial order load
 
   // Initial data fetch
-  useEffect(() => {
+  // break out refetch logic into a function
+  const refetchOrder = async () => {
     if (id) {
       setPageLoading(true);
-      const orderStatus = fetchOrderById(id);
-      orderStatus
-        .then((fetchedOrder) => {
-          if (!fetchedOrder) {
-            //console.error('Order not found or failed to load');
-            setPageLoading(false);
-            return;
-          }
-          setOrder(fetchedOrder);
+      try {
+        const fetchedOrder = await fetchOrderById(id);
+        if (!fetchedOrder) {
+          console.error('Order not found or failed to load');
           setPageLoading(false);
-        })
-        .catch((error) => {
-          console.error('Error fetching order:', error);
-          setPageLoading(false);
-        });
+          return;
+        }
+        setOrder(fetchedOrder);
+      } catch (error) {
+        console.error('Error fetching order:', error);
+      } finally {
+        setPageLoading(false);
+      }
     }
+  };
+  useEffect(() => {
+    refetchOrder();
   }, []);
 
   const sendAction = async (action: Action) => {
     console.log(`Sending action: ${action} for order ID: ${id}`);
     sendCustomerActionSignal(id, action);
+    refetchOrder();
   };
 
   const actionRequired = useMemo(() => {

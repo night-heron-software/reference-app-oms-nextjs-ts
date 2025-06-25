@@ -89,13 +89,19 @@ export async function fetchOrders(): Promise<OrderQueryResult[]> {
   return result.rows as OrderQueryResult[];
 }
 
-export async function updateOrderStatus(id: string, status: OrderStatus): Promise<void> {
+export async function updateOrderStatus(
+  order: OrderQueryResult,
+  status: OrderStatus
+): Promise<void> {
+  log.info(`updateOrderStatus: ${JSON.stringify(order, null, 2)}`);
+  order.status = status;
+
   const result = await db.sql`
 	UPDATE orders
 	SET status = ${status}
-	WHERE id = ${id}
+	WHERE id = ${order.id}
   `;
   if (result.rowCount === 0) {
-    throw new Error(`Failed to update order status for ID: ${id}`);
+    throw new Error(`Failed to update order status for ID: ${order.id}`);
   }
 }

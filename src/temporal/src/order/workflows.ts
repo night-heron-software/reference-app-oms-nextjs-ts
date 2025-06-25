@@ -71,7 +71,10 @@ export async function order(input: OrderInput): Promise<OrderQueryResult> {
 
   log.info(`Order: ${JSON.stringify(order, null, 2)} created!`);
 
-  setupQueryHandler(order);
+  wf.setHandler(getOrderStatus, () => {
+    log.info(`getOrderStatus called for order: ${order.id}`);
+    return order;
+  });
 
   const reserveItemsResult = await reserveItems({ orderId: order.id, items: order.items });
 
@@ -94,10 +97,10 @@ export async function order(input: OrderInput): Promise<OrderQueryResult> {
       cancelUnavailableFulfillments(order);
     } else if (customerAction === 'cancel') {
       cancelAllFulfillments(order);
-      updateOrderStatus(order.id, 'cancelled');
+      updateOrderStatus(order, 'cancelled');
       return order;
     } else if (customerAction === 'timedOut') {
-      updateOrderStatus(order.id, 'timedOut');
+      updateOrderStatus(order, 'timedOut');
       cancelAllFulfillments(order);
       return order;
     } else {
@@ -106,8 +109,8 @@ export async function order(input: OrderInput): Promise<OrderQueryResult> {
     }
     break;
   }
-
-  await updateOrderStatus(order.id, 'processing');
+  await wf.condition(wf.allHandlersFinished);
+  await updateOrderStatus(order, 'processing');
 
   const fulfillmentMap = new Map(order.fulfillments.map((f) => [f.id, f]));
 
@@ -130,7 +133,7 @@ export async function order(input: OrderInput): Promise<OrderQueryResult> {
   });
 
   await runFulfillments(order);
-  await updateOrderStatus(order.id, 'completed');
+  await updateOrderStatus(order, 'completed');
   log.info(`order: ${JSON.stringify(order, null, 2)}`);
   return order;
 }
@@ -216,6 +219,7 @@ export async function fulfill(fulfillment: Fulfillment): Promise<string | null> 
 }
 
 function cancelUnavailableFulfillments(order: OrderQueryResult): void {
+  order.status = 'processing';
   order.fulfillments?.forEach((fulfillment) => {
     if (fulfillment.status === 'unavailable') {
       fulfillment.status = 'cancelled'; // Update status to 'cancelled'
@@ -233,7 +237,7 @@ function cancelAllFulfillments(order: OrderQueryResult): void {
   });
   order.status = 'cancelled'; // Update the order status to 'cancelled'
   log.info(`All fulfillments for order ${order.id} have been cancelled.`);
-  updateOrderStatus(order.id, 'cancelled'); // Update the order status in the database
+  updateOrderStatus(order, 'cancelled'); // Update the order status in the database
   // Do I need to update the database or notify any services about this cancellation?
   // You might want to call an activity to update the order status in the database here
 }
@@ -243,13 +247,6 @@ function reservationsFound(reserveItemsResult: ReserveItemsResult): boolean {
 }
 // How should this be made available to the client?
 export const getOrderStatus = wf.defineQuery<OrderQueryResult>('getOrderStatus');
-
-function setupQueryHandler(order: OrderQueryResult) {
-  wf.setHandler(getOrderStatus, () => {
-    log.info(`getOrderStatus called for order: ${order.id}`);
-    return order;
-  });
-}
 
 export const customerActionSignal = wf.defineSignal<[string]>('customerAction');
 
