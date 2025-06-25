@@ -9,6 +9,7 @@ import { fetchShipments } from '@/actions/actions';
 import Link from '@/components/Link'; // Placeholder for Link.tsx
 import StatusBadge from '@/components/StatusBadge'; // Placeholder for StatusBadge.tsx
 import TableWithHeader from '@/components/TableWithHeader'; // Placeholder for TableWithHeader.tsx
+import { TableData } from '@/types/ui';
 
 // Define placeholder props for imported components for type safety
 // Actual props might differ based on your component implementations
@@ -62,5 +63,5 @@ export default function ShipmentsPage() {
     fetchInitialShipments();
   }, []);
 
-  return <TableWithHeader title="Shipments" columns={columns} data={shipments} />;
+  return <TableWithHeader title="Shipments" columns={columns} data={shipments as TableData} />;
 }

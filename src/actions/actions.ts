@@ -146,32 +146,7 @@ export async function updateShipmentCarrierStatus(
     console.warn(`Error updating shipment carrier status for ${shipmentId}:`, error);
   }
 }
-/* func (h *handlers) handleCustomerAction(w http.ResponseWriter, r *http.Request) {
-	var signal CustomerActionSignal
 
-	err := json.NewDecoder(r.Body).Decode(&signal)
-	if err != nil {
-		h.logger.Error("Failed to decode customer action signal", "error", err)
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	err = h.temporal.SignalWorkflow(context.Background(),
-		OrderWorkflowID(r.PathValue("id")), "",
-		CustomerActionSignalName,
-		signal,
-	)
-	if err != nil {
-		if _, ok := err.(*serviceerror.NotFound); ok {
-			h.logger.Error("Failed to signal order workflow", "error", err)
-			http.Error(w, "Order not found", http.StatusNotFound)
-		} else {
-			h.logger.Error("Failed to signal order workflow", "error", err)
-			http.Error(w, err.Error(), http.StatusBadRequest)
-		}
-		return
-	}
-} */
 const customerActionSignal = defineSignal<[string]>('customerAction');
 
 export async function sendCustomerActionSignal(workflowId: string, action: Action): Promise<void> {
