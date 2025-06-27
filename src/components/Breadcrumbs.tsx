@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import React from 'react';
 import { capitalize } from '@/lib/utils/formatting';
+import Logo from './OmsLogo'; // Adjust the import path as necessary
 
 interface BreadcrumbsProps {
   paths: string[];
@@ -14,7 +15,8 @@ const Breadcrumbs: React.FC<BreadcrumbsProps> = ({ paths }) => {
       <ol className="flex items-center space-x-2 text-sm text-gray-800">
         <li>
           <Link href="/" className="hover:underline">
-            Home
+            <Logo />
+            <span className="sr-only">Home</span>
           </Link>
         </li>
         {paths.map((path, index) => {
