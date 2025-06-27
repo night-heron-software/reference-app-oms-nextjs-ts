@@ -1,4 +1,3 @@
-import type { Component, FunctionComponent } from 'react';
 export interface Persona {
   role: string;
   link: string; // Assuming 'link' is a property used by the Link component

@@ -1,54 +1,49 @@
 'use client';
-import { useMemo, useState } from 'react';
-// This is a client-side component in Next.js
-import Heading from './Heading'; // Assuming Heading.tsx or Heading.jsx
-import type { TableColumns, TableData, Persona } from '@/src/types/ui'; // Adjust the import path as necessary
-// Define types similar to what would be in $lib/types/ui
-// In a real project, import these from your shared types location.
-interface TableWithHeaderProps<R = any> {
+
+import React, { useState, useMemo, useCallback } from 'react';
+import type { TableColumns, TableData } from '@/types/ui';
+import Heading from './Heading';
+import clsx from 'clsx'; // You might need to install 'clsx': npm install clsx
+
+interface TableWithHeaderProps {
   title: string;
   description?: string;
-  action?: () => React.ReactNode; // Translated from Svelte Snippet
+  action?: () => React.ReactNode; // Svelte Snippet is like a render prop or function that returns JSX
   columns: TableColumns;
   data: TableData;
 }
 
-/* const formatter = (value: string, row: any) => ({
-  type: Link, // The React Link component
-  props: { value: value, href: row.link } // Props for the Link component
-});
- */
-const TableWithHeader = <R extends Record<string, any>>({
+const pageSize = 50;
+
+const TableWithHeader: React.FC<TableWithHeaderProps> = ({
   title,
   description,
   action,
   columns,
   data
-}: TableWithHeaderProps<R>) => {
-  const pageSize = 50;
+}) => {
   const [page, setPage] = useState(1);
 
   const pageData = useMemo(() => {
     const start = (page - 1) * pageSize;
-    const end = start + pageSize;
+    const end = page * pageSize;
     return (data || []).slice(start, end);
-  }, [data, page, pageSize]);
+  }, [data, page]);
 
-  const nextPage = () => {
-    if (page * pageSize < data.length) {
+  const nextPage = useCallback(() => {
+    if (page * pageSize < (data || []).length) {
       setPage((prevPage) => prevPage + 1);
     }
-  };
+  }, [page, (data || []).length]);
 
-  const prevPage = () => {
+  const prevPage = useCallback(() => {
     if (page > 1) {
       setPage((prevPage) => prevPage - 1);
     }
-  };
+  }, [page]);
 
-  const totalItems = (data || []).length;
-  const firstItemOnPage = totalItems > 0 ? (page - 1) * pageSize + 1 : 0;
-  const lastItemOnPage = Math.min(page * pageSize, totalItems);
+  const canGoNext = page * pageSize < pageData.length;
+  const canGoPrev = page > 1;
 
   return (
     <div className="px-4 sm:px-6 lg:px-8 w-full">
@@ -57,7 +52,9 @@ const TableWithHeader = <R extends Record<string, any>>({
           <Heading>{title}</Heading>
           {description && <p className="mt-2 text-sm text-gray-700">{description}</p>}
         </div>
-        <div className="mt-4 sm:mt-0 sm:ml-16 sm:flex-none">{action && action()}</div>
+        <div className="mt-4 sm:mt-0 sm:ml-16 sm:flex-none">
+          {action && action()} {/* Call the action function if it exists */}
+        </div>
       </div>
       <div className="mt-8 flow-root">
         <div className="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
@@ -66,9 +63,9 @@ const TableWithHeader = <R extends Record<string, any>>({
               <table className="min-w-full divide-y divide-gray-300">
                 <thead className="bg-gray-50">
                   <tr className="text-left">
-                    {columns.map((column, colIndex) => (
+                    {columns.map((column, i) => (
                       <th
-                        key={column.key || colIndex}
+                        key={column.key || i}
                         scope="col"
                         className="px-3 py-3.5 text-sm font-semibold text-gray-900"
                       >
@@ -80,34 +77,31 @@ const TableWithHeader = <R extends Record<string, any>>({
                 <tbody className="divide-y divide-gray-200 bg-white">
                   {pageData.length > 0 ? (
                     pageData.map((row, rowIndex) => (
+                      // Ideally, use a stable unique ID from `row` (e.g., row.id) instead of rowIndex
                       <tr key={rowIndex}>
-                        {/* Consider using a unique row.id if available */}
                         {columns.map((column, colIndex) => {
-                          const cellValue = (row as any)[column.key];
+                          const value = row[column.key];
                           let content: React.ReactNode;
 
                           if (column.formatter) {
-                            const formattedValue = column.formatter(cellValue, row);
+                            const formattedValue = column.formatter(value, row);
                             if (typeof formattedValue === 'string') {
                               content = formattedValue;
                             } else {
-                              // Assumes formattedValue is { type: Component, props: {} }
-                              const FormattedComponent = formattedValue.type as React.ElementType;
+                              // Assuming formattedValue is { type: Component, props: {} }
+                              const FormattedComponent = formattedValue.type;
                               content = <FormattedComponent {...formattedValue.props} />;
                             }
                           } else {
-                            content =
-                              cellValue === null || typeof cellValue === 'undefined'
-                                ? ''
-                                : String(cellValue);
+                            content = value;
                           }
 
                           return (
                             <td
-                              key={column.key || colIndex}
-                              className={`px-3 py-4 text-sm whitespace-nowrap text-gray-700 ${
-                                colIndex === 0 ? 'w-full' : ''
-                              }`.trim()}
+                              key={column.key} // Use column.key for cell key
+                              className={clsx('px-3 py-4 text-sm whitespace-nowrap text-gray-700', {
+                                'w-full': colIndex === 0
+                              })}
                             >
                               {content}
                             </td>
@@ -129,22 +123,28 @@ const TableWithHeader = <R extends Record<string, any>>({
               </table>
               <div className="flex items-center justify-between bg-gray-50 p-2">
                 <p className="text-xs text-gray-700">
-                  {totalItems > 0
-                    ? `${firstItemOnPage.toLocaleString()} - ${lastItemOnPage.toLocaleString()} of ${totalItems.toLocaleString()}`
-                    : '0 results'}
+                  {(page * pageSize - pageSize + 1).toLocaleString()} -{' '}
+                  {Math.min(page * pageSize, pageData.length).toLocaleString()} of{' '}
+                  {pageData.length.toLocaleString()}
                 </p>
                 <div className="flex flex-1 gap-2 justify-end">
                   <button
                     onClick={prevPage}
-                    disabled={page <= 1}
-                    className="relative cursor-pointer inline-flex items-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 ring-1 ring-gray-300 ring-inset hover:bg-gray-50 focus-visible:outline-offset-0 disabled:opacity-50 disabled:cursor-not-allowed"
+                    disabled={!canGoPrev} // Disable button when no previous page
+                    className={clsx(
+                      'relative cursor-pointer inline-flex items-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 ring-1 ring-gray-300 ring-inset hover:bg-gray-50 focus-visible:outline-offset-0',
+                      { 'opacity-50 cursor-not-allowed': !canGoPrev } // Add disabled styling
+                    )}
                   >
                     Previous
                   </button>
                   <button
                     onClick={nextPage}
-                    disabled={page * pageSize >= totalItems}
-                    className="relative cursor-pointer inline-flex items-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 ring-1 ring-gray-300 ring-inset hover:bg-gray-50 focus-visible:outline-offset-0 disabled:opacity-50 disabled:cursor-not-allowed"
+                    disabled={!canGoNext} // Disable button when no next page
+                    className={clsx(
+                      'relative cursor-pointer inline-flex items-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 ring-1 ring-gray-300 ring-inset hover:bg-gray-50 focus-visible:outline-offset-0',
+                      { 'opacity-50 cursor-not-allowed': !canGoNext } // Add disabled styling
+                    )}
                   >
                     Next
                   </button>
