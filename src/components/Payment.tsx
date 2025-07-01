@@ -10,8 +10,17 @@ import React from 'react';
 //   shipping: number; // in cents
 //   total: number;    // in cents
 //   // ... any other payment properties
+export interface Payment {
+  shipping: number;
+  tax: number;
+  subTotal: number;
+  total: number;
+  status: PaymentStatus;
+}
+
 // }
-import type { Payment as PaymentType } from '@/types/order';
+import type { Payment as PaymentType } from '@/temporal/src/order/order';
+import type { PaymentStatus } from '@/temporal/src/order/order';
 
 // Assuming capitalize utility is in a shared location, e.g., @/utils/formatting
 // You would need to create/update this file (e.g., src/utils/formatting.ts) with:

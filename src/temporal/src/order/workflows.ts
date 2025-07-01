@@ -2,11 +2,12 @@ import * as wf from '@temporalio/workflow';
 
 import { log, uuid4 } from '@temporalio/workflow';
 
-import * as activities from './activities.js'; // Ensure this path is correct and the module exists
-import type { ItemInput, OrderInput } from './definitions.js'; // Import Order type
-import { Fulfillment, OrderItem, OrderQueryResult, ReserveItemsResult } from './order.js'; // Adjust the import path as necessary
 import * as billing from '../billing/definitions.js'; // Ensure this path is correct and the module exists
 import * as shipment from '../shipment/definitions.js'; // Ensure this path is correct and the module exists
+import * as activities from './activities.js'; // Ensure this path is correct and the module exists
+import type { ItemInput, OrderInput } from './definitions.js'; // Import Order type
+import { Fulfillment, OrderItem, OrderQueryResult, Payment, ReserveItemsResult } from './order.js'; // Adjust the import path as necessary
+
 export const ShipmentStatusUpdatedSignalName = 'ShipmentStatusUpdated';
 
 export type ShipmentStatus = 'pending' | 'shipped' | 'timed_out' | 'cancelled';
@@ -131,6 +132,7 @@ export async function order(input: OrderInput): Promise<OrderQueryResult> {
       console.warn(`No fulfillment found for shipment ID: ${shipmentId}`);
     }
   });
+  // waits for payment to be processed before proceeding with shipment
 
   await runFulfillments(order);
   await updateOrderStatus(order, 'completed');
@@ -177,45 +179,37 @@ async function runFulfillments(order: OrderQueryResult) {
     log.warning('No fulfillments to run');
     return;
   }
-
-  const fulfillmentResults = order.fulfillments.map((fulfillment) => {
-    log.info(`Starting fulfillment workflow for: ${fulfillment.id}`);
-    return wf
-      .executeChild(fulfill, {
-        args: [fulfillment],
-        taskQueue: 'orders',
-        workflowId: `fulfill-${fulfillment.id}`,
-        workflowExecutionTimeout: '2h',
-        workflowTaskTimeout: '2m'
-      })
-      .then((result) => {
-        log.info(`Fulfillment workflow completed for: ${fulfillment.id}, result: ${result}`);
-        return result;
-      });
+  order.fulfillments.forEach(async (fulfillment) => {
+    const payment: Payment | undefined = await processPayment(fulfillment);
+    if (payment) {
+      fulfillment.payment = payment; // Add payment details to the fulfillment
+    }
   });
 
-  await Promise.all(fulfillmentResults)
-    .then((results) => {
-      log.info(`Fulfillment results: ${JSON.stringify(results, null, 2)}`);
-    })
-    .catch((error) => {
-      console.error(`Error processing fulfillments for order ${order.id}:`, error);
+  const fulfillmentPromises = order.fulfillments.map((fulfillment) => {
+    log.info(`Starting fulfillment workflow for: ${fulfillment.id}`);
+    return wf.executeChild(fulfill, {
+      args: [fulfillment],
+      taskQueue: 'orders',
+      workflowId: `fulfill-${fulfillment.id}`,
+      workflowExecutionTimeout: '2h',
+      workflowTaskTimeout: '2m'
     });
+  });
+
+  const fulfillmentResults = await Promise.all(fulfillmentPromises);
 }
 
-export async function fulfill(fulfillment: Fulfillment): Promise<string | null> {
+export async function fulfill(fulfillment: Fulfillment) {
   log.info(`processFulfillment(${fulfillment.id})`);
 
   if (fulfillment.status === 'cancelled') {
     log.info(`ignoring cancelled fulfillment ${fulfillment.id}`);
-    return null;
+    return undefined;
   }
-  // waits for payment to be processed before proceeding with shipment
-  await processPayment(fulfillment);
 
   await processShipment(fulfillment);
   log.info(`Fulfillment ${fulfillment.id} processed successfully`);
-  return `Fulfillment ${fulfillment.id} processed successfully`;
 }
 
 function cancelUnavailableFulfillments(order: OrderQueryResult): void {
@@ -270,7 +264,7 @@ async function waitForCustomer(order: OrderQueryResult): Promise<string> {
   return signalValue || 'noActionTaken';
 }
 
-export async function processPayment(fulfillment: Fulfillment): Promise<string> {
+export async function processPayment(fulfillment: Fulfillment): Promise<Payment | undefined> {
   log.info(`processPayment: ${JSON.stringify(fulfillment, null, 2)}`);
   const billingItems: billing.Item[] = fulfillment.items.map((item) => ({
     sku: item.sku,
@@ -279,9 +273,11 @@ export async function processPayment(fulfillment: Fulfillment): Promise<string> 
 
   const chargeKey = uuid4();
   const workflowId = `charge-${wf.workflowInfo().workflowId}-${chargeKey}`;
+
   log.info(`charge: workflowId: ${workflowId}`);
+
   try {
-    const workflowResult = await wf.executeChild('charge', {
+    const payment = await wf.executeChild('charge', {
       args: [
         {
           customerId: fulfillment.customerId,
@@ -295,16 +291,15 @@ export async function processPayment(fulfillment: Fulfillment): Promise<string> 
       workflowExecutionTimeout: '2h',
       workflowTaskTimeout: '2m'
     });
-    log.info(`charge workflow result: ${JSON.stringify(workflowResult)}`);
+    log.info(`charge workflow result: ${JSON.stringify(payment)}`);
+
+    return payment;
   } catch (error) {
     log.error(`Error processing payment for fulfillment ${fulfillment.id}: ${error}`);
     return new Promise((resolve, reject) => {
       reject(error);
     });
   }
-  return new Promise((resolve, reject) => {
-    resolve('Payment processed successfully');
-  });
 }
 export async function processShipment(fulfillment: Fulfillment): Promise<string> {
   log.info(`processShipment: ${JSON.stringify(fulfillment, null, 2)}`);

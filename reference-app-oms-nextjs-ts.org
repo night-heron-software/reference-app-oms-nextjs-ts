@@ -1725,5 +1725,4 @@ Prompts to try
 [dev:next             ]  POST /orders 200 in 102ms
 [dev:next             ]  GET /shipments 200 in 225ms
 [dev:next             ]  POST /shipments 200 in 245ms
-
 #+end_example
