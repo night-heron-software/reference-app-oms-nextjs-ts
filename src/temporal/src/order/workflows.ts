@@ -6,6 +6,7 @@ import { charge } from '../billing/workflows.js';
 import * as shipment from '../shipment/definitions.js';
 import * as activities from './activities.js';
 import { type ItemInput, type OrderInput } from './definitions.js';
+import { ship } from '../shipment/workflows.js';
 import {
   Fulfillment,
   OrderItem,
@@ -316,10 +317,10 @@ export async function processShipment(fulfillment: Fulfillment): Promise<string>
     items: shipmentItems
   };
   log.info(`shipmentInput: ${JSON.stringify(shipmentInput, null, 2)}`);
-  const workflowId = `Ship:${fulfillment.id}`;
+  const workflowId = shipment.shipmentIdToWorkflowId(fulfillment.id);
   log.info(`ship: workflowId: ${workflowId}`);
   try {
-    const workflowResult = await wf.executeChild('ship', {
+    const workflowResult = await wf.executeChild(ship, {
       args: [shipmentInput],
       taskQueue: 'shipments',
       workflowId: workflowId,

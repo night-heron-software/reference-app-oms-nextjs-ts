@@ -1,15 +1,13 @@
 'use server';
 import 'server-only';
 
-import { Action, getTemporalClient, OrderQueryResult, Shipment, ShipmentStatus } from './client';
+import { orderWorkflowIdFromOrderId } from '@/temporal/src/order/definitions';
+import { defineQuery, defineSignal } from '@temporalio/workflow';
 import { sql } from '@vercel/postgres';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
-import { defineQuery, defineSignal } from '@temporalio/workflow';
-import {
-  orderIdFromOrderWorkflowId,
-  orderWorkflowIdFromOrderId
-} from '@/temporal/src/order/definitions';
+import { Action, getTemporalClient, OrderQueryResult, Shipment, ShipmentStatus } from './client';
+import { shipmentIdToWorkflowId } from '@/temporal/lib/shipment/definitions';
 
 const getOrderStatus = defineQuery<OrderQueryResult>('getOrderStatus');
 
@@ -109,8 +107,10 @@ const getShipmentStatus = defineQuery<ShipmentStatus>('getShipmentStatus');
 
 export async function fetchShipmentById(id: string): Promise<ShipmentStatus | undefined> {
   const client = await getTemporalClient();
+  const workflowId = shipmentIdToWorkflowId(id);
 
-  const handle = client.workflow.getHandle('ship-' + id);
+  const handle = client.workflow.getHandle(workflowId);
+
   for (let retry = 0; retry < 10; retry++) {
     try {
       // Attempt to fetch the shipment status

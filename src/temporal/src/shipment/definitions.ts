@@ -73,3 +73,10 @@ export interface BookShipmentInput {
 export interface BookShipmentResult {
   courierReference: string;
 }
+export function shipmentIdToWorkflowId(id: string): string {
+  return 'Ship:' + id;
+}
+
+export function workflowIdFromShipmentId(id: string): string {
+  return id.replace(/^Ship:/, '');
+}
