@@ -6,6 +6,10 @@ import { sql } from '@vercel/postgres';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { defineQuery, defineSignal } from '@temporalio/workflow';
+import {
+  orderIdFromOrderWorkflowId,
+  orderWorkflowIdFromOrderId
+} from '@/temporal/src/order/definitions';
 
 const getOrderStatus = defineQuery<OrderQueryResult>('getOrderStatus');
 
@@ -41,7 +45,7 @@ export async function createOrder(formData: FormData): Promise<void> {
     client.workflow
       .start('order', {
         taskQueue: 'orders',
-        workflowId: orderInput.id,
+        workflowId: orderWorkflowIdFromOrderId(orderInput.id),
         args: [orderInput],
         retry: {
           maximumAttempts: 4,
@@ -50,10 +54,6 @@ export async function createOrder(formData: FormData): Promise<void> {
           backoffCoefficient: 2.0,
           nonRetryableErrorTypes: ['NotFoundError', 'InvalidArgumentError']
         },
-        // Set the workflow and task timeouts
-        // These can be adjusted based on your requirements
-        // workflowExecutionTimeout is the maximum time the workflow can run
-        // workflowTaskTimeout is the maximum time a single task can take
         workflowExecutionTimeout: '2 days',
         workflowTaskTimeout: '2m'
       })
@@ -92,9 +92,10 @@ async function insertOrder(order: OrderQueryResult): Promise<number> {
 }
 
 export async function fetchOrderById(id: string): Promise<OrderQueryResult | undefined> {
+  const workflowId = orderWorkflowIdFromOrderId(id);
   const client = await getTemporalClient();
 
-  const handle = client.workflow.getHandle(id);
+  const handle = client.workflow.getHandle(workflowId);
   try {
     const orderStatus = await handle.query(getOrderStatus);
     console.log(`Fetched order: ${JSON.stringify(orderStatus, null, 2)}`);

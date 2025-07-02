@@ -1,4 +1,5 @@
 import { ItemInput } from './definitions.js';
+import * as wf from '@temporalio/workflow';
 /*
   To avoid needing explicit file extensions in relative imports, set the `moduleResolution` option to `node` or `classic` in your `tsconfig.json`:
 
@@ -85,3 +86,15 @@ export interface Reservation {
 export interface ReserveItemsResult {
   reservations: Reservation[];
 }
+export const ShipmentStatusUpdatedSignalName = 'ShipmentStatusUpdated';
+
+export type ShipmentStatus = 'pending' | 'shipped' | 'timed_out' | 'cancelled';
+
+export interface ShipmentStatusUpdatedSignal {
+  shipmentId: string;
+  status: ShipmentStatus;
+  updatedAt: Date;
+}
+
+export const shipmentStatusSignal =
+  wf.defineSignal<[ShipmentStatusUpdatedSignal]>('ShipmentStatusUpdated');

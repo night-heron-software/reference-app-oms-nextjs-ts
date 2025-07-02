@@ -18,3 +18,11 @@ export type ListOrderEntry = {
   status: string;
   received_at: string;
 };
+
+export function orderWorkflowIdFromOrderId(id: string): string {
+  return 'Order:' + id;
+}
+
+export function orderIdFromOrderWorkflowId(id: string): string {
+  return id.replace(/^Order:/, '');
+}

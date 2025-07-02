@@ -11,9 +11,11 @@ export async function generateInvoice(input: GenerateInvoiceInput): Promise<Gene
   if (!input?.customerId) {
     throw new Error('Customer ID cannot be empty');
   }
+
   if (!input?.reference) {
     throw new Error('Reference cannot be empty');
   }
+
   if (!input?.items?.length) {
     throw new Error('Items cannot be empty');
   }

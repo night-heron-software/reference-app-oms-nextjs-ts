@@ -1,19 +1,15 @@
 'use client';
 
 import { fetchOrders } from '@/actions/actions'; // Adjust the import path as necessary
+import Button from '@/components/Button';
+import Link from '@/components/Link';
+import StatusBadge from '@/components/StatusBadge';
 import { OrderQueryResult } from '@/temporal/src/order/order';
 import type { TableColumns, TableData } from '@/types/ui'; // Adjust the import path as necessary
 import { useRouter } from 'next/navigation';
 import React, { useEffect, useState } from 'react';
-// Assuming these are your React components, paths might need adjustment
-// e.g., if your lib folder is aliased to @/lib
-import Button from '@/components/Button';
-import Link from '@/components/Link';
-import StatusBadge from '@/components/StatusBadge';
 import TableWithHeader from '../../components/TableWithHeader';
-//import TableWithHeader from '@/components/TableWithHeader'; // Assuming TableWithHeader exports ColumnDefinition
 
-// Definition for table columns
 export interface ColumnDefinition<TData extends Record<string, any>> {
   title: string;
   key: keyof TData | (string & {}); // Allows string keys while preferring keyof TData for type safety
@@ -79,19 +75,3 @@ function OrdersPage() {
 }
 
 export default OrdersPage;
-
-// Note: For this to work, you'd need React versions of your Svelte components:
-// - Button.tsx (or .jsx)
-// - Link.tsx (or .jsx) - Its props might differ from Svelte version.
-//   The Svelte version used `value` for text content.
-// - StatusBadge.tsx (or .jsx)
-// - TableWithHeader.tsx (or .jsx) - It would need to accept `columns` with a `render`
-//   function, and an `actionElement` prop (or similar) for the button.
-//   The ColumnDefinition type would also be defined by or for TableWithHeader.
-//
-// Example minimal ColumnDefinition for TableWithHeader:
-// export interface ColumnDefinition<T> {
-//   title: string;
-//   key: keyof T | (string & {}); // To allow string keys while preferring keyof T
-//   render: (value: any, record: T, index: number) => React.ReactNode;
-// }

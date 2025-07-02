@@ -1,25 +1,19 @@
 import * as wf from '@temporalio/workflow';
 
 import { log, uuid4 } from '@temporalio/workflow';
-
-import * as billing from '../billing/definitions.js'; // Ensure this path is correct and the module exists
-import * as shipment from '../shipment/definitions.js'; // Ensure this path is correct and the module exists
-import * as activities from './activities.js'; // Ensure this path is correct and the module exists
-import type { ItemInput, OrderInput } from './definitions.js'; // Import Order type
-import { Fulfillment, OrderItem, OrderQueryResult, Payment, ReserveItemsResult } from './order.js'; // Adjust the import path as necessary
-
-export const ShipmentStatusUpdatedSignalName = 'ShipmentStatusUpdated';
-
-export type ShipmentStatus = 'pending' | 'shipped' | 'timed_out' | 'cancelled';
-
-export interface ShipmentStatusUpdatedSignal {
-  shipmentId: string;
-  status: ShipmentStatus;
-  updatedAt: Date;
-}
-
-export const shipmentStatusSignal =
-  wf.defineSignal<[ShipmentStatusUpdatedSignal]>('ShipmentStatusUpdated');
+import * as billing from '../billing/definitions.js';
+import { charge } from '../billing/workflows.js';
+import * as shipment from '../shipment/definitions.js';
+import * as activities from './activities.js';
+import { type ItemInput, type OrderInput } from './definitions.js';
+import {
+  Fulfillment,
+  OrderItem,
+  OrderQueryResult,
+  Payment,
+  ReserveItemsResult,
+  shipmentStatusSignal
+} from './order.js'; // Adjust the import path as necessary
 
 const { reserveItems, updateOrderStatus } = wf.proxyActivities<typeof activities>({
   retry: {
@@ -191,7 +185,7 @@ async function runFulfillments(order: OrderQueryResult) {
     return wf.executeChild(fulfill, {
       args: [fulfillment],
       taskQueue: 'orders',
-      workflowId: `fulfill-${fulfillment.id}`,
+      workflowId: `Fulfill:${fulfillment.id}`,
       workflowExecutionTimeout: '2h',
       workflowTaskTimeout: '2m'
     });
@@ -272,12 +266,12 @@ export async function processPayment(fulfillment: Fulfillment): Promise<Payment 
   }));
 
   const chargeKey = uuid4();
-  const workflowId = `charge-${wf.workflowInfo().workflowId}-${chargeKey}`;
+  const workflowId = `Charge:${fulfillment.id}-${chargeKey}`;
 
   log.info(`charge: workflowId: ${workflowId}`);
 
   try {
-    const payment = await wf.executeChild('charge', {
+    const chargeResult = await wf.executeChild(charge, {
       args: [
         {
           customerId: fulfillment.customerId,
@@ -291,9 +285,14 @@ export async function processPayment(fulfillment: Fulfillment): Promise<Payment 
       workflowExecutionTimeout: '2h',
       workflowTaskTimeout: '2m'
     });
-    log.info(`charge workflow result: ${JSON.stringify(payment)}`);
 
-    return payment;
+    if (!chargeResult) {
+      log.error(`Charge result is undefined for fulfillment ${fulfillment.id}`);
+      return undefined;
+    }
+    log.info(`chargeResult: ${JSON.stringify(chargeResult)}`);
+
+    return { ...chargeResult, status: chargeResult.success ? 'success' : 'failed' };
   } catch (error) {
     log.error(`Error processing payment for fulfillment ${fulfillment.id}: ${error}`);
     return new Promise((resolve, reject) => {
@@ -301,6 +300,7 @@ export async function processPayment(fulfillment: Fulfillment): Promise<Payment 
     });
   }
 }
+
 export async function processShipment(fulfillment: Fulfillment): Promise<string> {
   log.info(`processShipment: ${JSON.stringify(fulfillment, null, 2)}`);
 
@@ -316,7 +316,7 @@ export async function processShipment(fulfillment: Fulfillment): Promise<string>
     items: shipmentItems
   };
   log.info(`shipmentInput: ${JSON.stringify(shipmentInput, null, 2)}`);
-  const workflowId = `ship-${fulfillment.id}`;
+  const workflowId = `Ship:${fulfillment.id}`;
   log.info(`ship: workflowId: ${workflowId}`);
   try {
     const workflowResult = await wf.executeChild('ship', {
