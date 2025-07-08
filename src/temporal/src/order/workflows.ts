@@ -138,6 +138,7 @@ export async function order(input: OrderInput): Promise<OrderOutput> {
   // waits for payment to be processed before proceeding with shipment
 
   await runFulfillments(orderContext);
+  await wf.condition(wf.allHandlersFinished);
   await updateOrderStatus(orderContext, 'completed');
   log.info(`order: ${JSON.stringify(orderContext, null, 2)}`);
   return orderContext;

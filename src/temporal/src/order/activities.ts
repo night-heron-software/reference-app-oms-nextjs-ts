@@ -103,11 +103,7 @@ export async function updateOrderStatus(order: OrderContext, status: OrderStatus
   const result = await db.sql`
     INSERT INTO orders (id, customer_id, status, received_at)
     VALUES (${order.id}, ${order.customerId}, ${order.status}, ${new Date().toISOString()})
-    RETURNING id, customer_id, status, received_at
     ON CONFLICT(id) DO UPDATE SET status = ${status}`;
 
-  if (result.rows.length === 0) {
-    throw new Error(`Failed to update order status for ID: ${order.id}`);
-  }
   log.info(`updateOrderStatus: ${JSON.stringify(result.rows[0], null, 2)}`);
 }
