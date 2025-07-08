@@ -4,17 +4,20 @@ import { log, uuid4 } from '@temporalio/workflow';
 import * as billing from '../billing/definitions.js';
 import { charge } from '../billing/workflows.js';
 import * as shipment from '../shipment/definitions.js';
-import * as activities from './activities.js';
-import { type ItemInput, type OrderInput } from './definitions.js';
 import { ship } from '../shipment/workflows.js';
+import * as activities from './activities.js';
 import {
   Fulfillment,
+  OrderContext,
   OrderItem,
   OrderQueryResult,
   Payment,
   ReserveItemsResult,
-  shipmentStatusSignal
-} from './order.js'; // Adjust the import path as necessary
+  shipmentStatusSignal,
+  type ItemInput,
+  type OrderInput,
+  type OrderOutput
+} from './order.js';
 
 const { reserveItems, updateOrderStatus } = wf.proxyActivities<typeof activities>({
   retry: {
@@ -41,7 +44,7 @@ function customerActionRequired(order: OrderQueryResult): boolean {
   return false;
 }
 
-export async function order(input: OrderInput): Promise<OrderQueryResult> {
+export async function order(input: OrderInput): Promise<OrderOutput> {
   if (!input) {
     throw new Error('Input is Empty!');
   }
@@ -57,22 +60,27 @@ export async function order(input: OrderInput): Promise<OrderQueryResult> {
     throw new Error('Items cannot be empty');
   }
 
-  const order: OrderQueryResult = {
+  const orderContext: OrderContext = {
     id: input.id,
     customerId: input.customerId,
     items: buildOrderItems(input),
     receivedAt: new Date().toISOString(),
-    status: 'pending' // or another appropriate default status
+    status: 'pending'
   };
 
-  log.info(`Order: ${JSON.stringify(order, null, 2)} created!`);
+  log.info(`Order: ${JSON.stringify(orderContext, null, 2)} created!`);
 
   wf.setHandler(getOrderStatus, () => {
-    log.info(`getOrderStatus called for order: ${order.id}`);
-    return order;
+    log.info(`getOrderStatus called for order: ${orderContext.id}`);
+    // OrderQueryResult is the same as OrderContext but the types might diverge in the future.
+    // If so, we map that here.
+    return orderContext as OrderQueryResult;
   });
 
-  const reserveItemsResult = await reserveItems({ orderId: order.id, items: order.items });
+  const reserveItemsResult = await reserveItems({
+    orderId: orderContext.id,
+    items: orderContext.items
+  });
 
   if (!reservationsFound(reserveItemsResult)) {
     throw new Error('No reservations found for the order');
@@ -80,25 +88,25 @@ export async function order(input: OrderInput): Promise<OrderQueryResult> {
 
   log.info(`Reservations: ${JSON.stringify(reserveItemsResult.reservations, null, 2)}`);
 
-  order.fulfillments = buildFulfillments(reserveItemsResult, order);
+  orderContext.fulfillments = buildFulfillments(reserveItemsResult, orderContext);
 
-  while (customerActionRequired(order)) {
-    order.status = 'customerActionRequired';
+  while (customerActionRequired(orderContext)) {
+    orderContext.status = 'customerActionRequired';
 
-    const customerAction = await waitForCustomer(order);
+    const customerAction = await waitForCustomer(orderContext);
 
     log.info(`Customer action taken: ${customerAction}`);
 
     if (customerAction === 'amend') {
-      cancelUnavailableFulfillments(order);
+      cancelUnavailableFulfillments(orderContext);
     } else if (customerAction === 'cancel') {
-      cancelAllFulfillments(order);
-      updateOrderStatus(order, 'cancelled');
-      return order;
+      cancelAllFulfillments(orderContext);
+      updateOrderStatus(orderContext, 'cancelled');
+      return orderContext;
     } else if (customerAction === 'timedOut') {
-      updateOrderStatus(order, 'timedOut');
-      cancelAllFulfillments(order);
-      return order;
+      updateOrderStatus(orderContext, 'timedOut');
+      cancelAllFulfillments(orderContext);
+      return orderContext;
     } else {
       log.error(`Unknown action taken by customer: ${customerAction}. Ignored`);
       continue;
@@ -106,9 +114,9 @@ export async function order(input: OrderInput): Promise<OrderQueryResult> {
     break;
   }
   await wf.condition(wf.allHandlersFinished);
-  await updateOrderStatus(order, 'processing');
+  await updateOrderStatus(orderContext, 'processing');
 
-  const fulfillmentMap = new Map(order.fulfillments.map((f) => [f.id, f]));
+  const fulfillmentMap = new Map(orderContext.fulfillments.map((f) => [f.id, f]));
 
   wf.setHandler(shipmentStatusSignal, ({ shipmentId, status, updatedAt }) => {
     log.info(`Shipment status updated: ${shipmentId}, ${status}, ${updatedAt}`);
@@ -129,10 +137,10 @@ export async function order(input: OrderInput): Promise<OrderQueryResult> {
   });
   // waits for payment to be processed before proceeding with shipment
 
-  await runFulfillments(order);
-  await updateOrderStatus(order, 'completed');
-  log.info(`order: ${JSON.stringify(order, null, 2)}`);
-  return order;
+  await runFulfillments(orderContext);
+  await updateOrderStatus(orderContext, 'completed');
+  log.info(`order: ${JSON.stringify(orderContext, null, 2)}`);
+  return orderContext;
 }
 
 function buildFulfillments(reserveItemsResult: ReserveItemsResult, order: OrderQueryResult) {

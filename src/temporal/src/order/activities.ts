@@ -1,8 +1,8 @@
 import { log } from '@temporalio/activity';
 import { db } from '@vercel/postgres';
 import {
+  OrderContext,
   OrderItem,
-  OrderQueryResult,
   OrderStatus,
   Reservation,
   ReserveItemsInput,
@@ -71,7 +71,7 @@ export async function reserveItems(input: ReserveItemsInput): Promise<ReserveIte
   };
 }
 
-export async function insertOrder(order: OrderQueryResult): Promise<OrderQueryResult> {
+export async function insertOrder(order: OrderContext): Promise<OrderContext> {
   const result = await db.sql`
     INSERT INTO orders (id, customer_id, status, received_at)
     VALUES (${order.id}, ${order.customerId}, ${order.status}, ${new Date().toISOString()})
@@ -80,28 +80,34 @@ export async function insertOrder(order: OrderQueryResult): Promise<OrderQueryRe
   if (result.rows.length === 0) {
     throw new Error('Failed to insert order');
   }
-  return result.rows[0] as OrderQueryResult;
+  return result.rows[0] as OrderContext;
 }
 
-export async function fetchOrders(): Promise<OrderQueryResult[]> {
+export async function fetchOrders(): Promise<OrderContext[]> {
   const result =
     await db.sql`SELECT id, customer_id, status, received_at FROM orders ORDER BY received_at DESC`;
-  return result.rows as OrderQueryResult[];
+  return result.rows as OrderContext[];
 }
 
-export async function updateOrderStatus(
-  order: OrderQueryResult,
-  status: OrderStatus
-): Promise<void> {
-  log.info(`updateOrderStatus: ${JSON.stringify(order, null, 2)}`);
-  order.status = status;
+function x(order: OrderContext, status: OrderStatus): void {
+  db.sql`
+    INSERT INTO orders (id, customer_id, status, received_at)
+    VALUES (${order.id}, ${order.customerId}, ${order.status}, ${new Date().toISOString()})
+    RETURNING id, customer_id, status, received_at
+  ON CONFLICT(id) DO UPDATE SET status = ${status}`;
+}
 
+export async function updateOrderStatus(order: OrderContext, status: OrderStatus): Promise<void> {
+  // Should this really update the order context?
+  order.status = status;
   const result = await db.sql`
-	UPDATE orders
-	SET status = ${status}
-	WHERE id = ${order.id}
-  `;
-  if (result.rowCount === 0) {
+    INSERT INTO orders (id, customer_id, status, received_at)
+    VALUES (${order.id}, ${order.customerId}, ${order.status}, ${new Date().toISOString()})
+    RETURNING id, customer_id, status, received_at
+    ON CONFLICT(id) DO UPDATE SET status = ${status}`;
+
+  if (result.rows.length === 0) {
     throw new Error(`Failed to update order status for ID: ${order.id}`);
   }
+  log.info(`updateOrderStatus: ${JSON.stringify(result.rows[0], null, 2)}`);
 }

@@ -21,7 +21,8 @@ CLOSED: [2025-06-23 Mon 09:22]
 
 ** processOrder => order
 
-* TODO fix customer action required
+* DONE fix customer action required
+CLOSED: [2025-07-08 Tue 10:12]
 
 ** Order detail page
 
@@ -29,8 +30,38 @@ CLOSED: [2025-06-23 Mon 09:22]
 
 - status stuck in pending
 
-* TODO Shipment Status
+* DONE Shipment Status
+CLOSED: [2025-07-08 Tue 10:13]
 
-* TODO Refresh on Courier shipments pages
+* DONE Refresh on Courier shipments pages
+CLOSED: [2025-07-08 Tue 10:13]
 
 * TODO Make workflow retry and duration parameters match svelte/go
+
+* TODO Using Objects for Input and Output
+
+** [[https://temporal.talentlms.com/unit/view/id:2717][Backwards-Compatible Evolution of Input Parameters and Return Values]]
+
+#+begin_src javascript
+// Define a type to encapsulate all data passed as input for this Activity
+export interface GreetingInput {
+  name: string;
+  languageCode: string;
+}
+
+// Define a type to encapsulate the data returned by this Activity
+export interface GreetingOutput {
+  translation: string;
+}
+
+#+end_src
+
+** [[https://github.com/temporalio/edu-102-typescript-code/tree/main/samples/using-objects][Optional: Using Objects for Data]]
+
+* TODO Logging
+
+* TODO Local Neon/Vercel Postgres
+
+* TODO Tests
+
+* TODO Sort out relative imports and moduleResolution - see note in order.ts
