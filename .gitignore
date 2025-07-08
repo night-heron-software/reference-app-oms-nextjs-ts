@@ -47,3 +47,4 @@ lib
 /*.db
 *.go
 *.svelte
+*/local.db

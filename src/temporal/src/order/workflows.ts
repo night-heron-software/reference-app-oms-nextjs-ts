@@ -10,7 +10,6 @@ import {
   Fulfillment,
   OrderContext,
   OrderItem,
-  OrderQueryResult,
   Payment,
   ReserveItemsResult,
   shipmentStatusSignal,
@@ -29,7 +28,7 @@ const { reserveItems, updateOrderStatus } = wf.proxyActivities<typeof activities
   startToCloseTimeout: '2h'
 });
 
-function customerActionRequired(order: OrderQueryResult): boolean {
+function customerActionRequired(order: OrderContext): boolean {
   if (!order.fulfillments || order.fulfillments.length === 0) {
     log.info(`No fulfillments found for order: ${order.id}`);
     return false;
@@ -72,9 +71,9 @@ export async function order(input: OrderInput): Promise<OrderOutput> {
 
   wf.setHandler(getOrderStatus, () => {
     log.info(`getOrderStatus called for order: ${orderContext.id}`);
-    // OrderQueryResult is the same as OrderContext but the types might diverge in the future.
+    // OrderContext is the same as OrderContext but the types might diverge in the future.
     // If so, we map that here.
-    return orderContext as OrderQueryResult;
+    return orderContext as OrderContext;
   });
 
   const reserveItemsResult = await reserveItems({
@@ -144,7 +143,7 @@ export async function order(input: OrderInput): Promise<OrderOutput> {
   return orderContext;
 }
 
-function buildFulfillments(reserveItemsResult: ReserveItemsResult, order: OrderQueryResult) {
+function buildFulfillments(reserveItemsResult: ReserveItemsResult, order: OrderContext) {
   return reserveItemsResult.reservations.map((reservation, i): Fulfillment => {
     const id = `${order.id}:${i + 1}`;
     const status = reservation.available ? 'pending' : 'unavailable';
@@ -178,7 +177,7 @@ function buildOrderItems(input: OrderInput): OrderItem[] {
   });
 }
 
-async function runFulfillments(order: OrderQueryResult) {
+async function runFulfillments(order: OrderContext) {
   if (!order?.fulfillments?.[0]) {
     log.warning('No fulfillments to run');
     return;
@@ -216,7 +215,7 @@ export async function fulfill(fulfillment: Fulfillment) {
   log.info(`Fulfillment ${fulfillment.id} processed successfully`);
 }
 
-function cancelUnavailableFulfillments(order: OrderQueryResult): void {
+function cancelUnavailableFulfillments(order: OrderContext): void {
   order.status = 'processing';
   order.fulfillments?.forEach((fulfillment) => {
     if (fulfillment.status === 'unavailable') {
@@ -229,7 +228,7 @@ function cancelUnavailableFulfillments(order: OrderQueryResult): void {
   // You might want to call an activity to update the order status in the database here
 }
 
-function cancelAllFulfillments(order: OrderQueryResult): void {
+function cancelAllFulfillments(order: OrderContext): void {
   order.fulfillments?.forEach((fulfillment) => {
     fulfillment.status = 'cancelled'; // Update each fulfillment status to 'cancelled'
   });
@@ -244,28 +243,22 @@ function reservationsFound(reserveItemsResult: ReserveItemsResult): boolean {
   return !!reserveItemsResult?.reservations?.length;
 }
 // How should this be made available to the client?
-export const getOrderStatus = wf.defineQuery<OrderQueryResult>('getOrderStatus');
+export const getOrderStatus = wf.defineQuery<OrderContext>('getOrderStatus');
 
 export const customerActionSignal = wf.defineSignal<[string]>('customerAction');
 
-async function waitForCustomer(order: OrderQueryResult): Promise<string> {
+async function waitForCustomer(order: OrderContext): Promise<string> {
   let signalReceived = false;
-  let signalValue: string | undefined;
-
-  setTimeout(() => {
-    if (!signalReceived) {
-      signalReceived = true;
-      signalValue = 'timedOut'; // Simulate a timeout action
-    }
-  }, 30000); // 30 seconds timeout
+  let signalValue = 'timedOut'; // Default value if no action is taken
 
   wf.setHandler(customerActionSignal, (value) => {
     signalReceived = true;
     signalValue = value;
   });
-
-  await wf.condition(() => signalReceived);
-  return signalValue || 'noActionTaken';
+  const conditionPromise = wf.condition(() => signalReceived);
+  const timeoutPromise = wf.sleep(10 * 60 * 1000); // Wait for 5 minutes for customer action
+  await Promise.race([conditionPromise, timeoutPromise]);
+  return signalValue;
 }
 
 export async function processPayment(fulfillment: Fulfillment): Promise<Payment | undefined> {

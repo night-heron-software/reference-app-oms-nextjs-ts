@@ -15,6 +15,7 @@ import type { OrderQueryResult } from '@/actions/client';
 
 import type { Action } from '@/types/order';
 import { send } from 'process';
+import { orderWorkflowIdFromOrderId } from '@/temporal/lib/order/order';
 
 interface OrderPageProps {
   params: Promise<{ id: string }>;
@@ -54,7 +55,7 @@ export default function OrderPage(props: OrderPageProps) {
 
   const sendAction = async (action: Action) => {
     console.log(`Sending action: ${action} for order ID: ${id}`);
-    sendCustomerActionSignal(id, action);
+    sendCustomerActionSignal(orderWorkflowIdFromOrderId(id), action);
     refetchOrder();
   };
 
