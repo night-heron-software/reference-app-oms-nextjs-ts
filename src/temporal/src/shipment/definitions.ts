@@ -3,7 +3,7 @@ export interface ShipmentItem {
   quantity: number;
 }
 
-export type Status = 'pending' | 'booked' | 'dispatched' | 'delivered';
+export type Status = 'pending' | 'booked' | 'dispatched' | 'delivered' | 'cancelled' | 'failed';
 
 // ShipmentCarrierUpdateSignalName is the name for a signal to update a shipment's status from the carrier.
 export const ShipmentCarrierUpdateSignalName = 'ShipmentCarrierUpdate';
@@ -49,6 +49,10 @@ export interface ShipmentInput {
   requestorWorkflowId: string;
   id: string;
   items: ShipmentItem[];
+}
+export interface ShipmentOutput {
+  id: string;
+  status: Status;
 }
 
 export interface ShipmentStatus {

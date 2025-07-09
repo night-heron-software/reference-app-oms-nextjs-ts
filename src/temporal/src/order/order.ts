@@ -138,3 +138,8 @@ export interface OrderContext {
   fulfillments?: Fulfillment[];
   status: OrderStatus;
 }
+
+export interface FulfillmentResult {
+  id: string;
+  status: FulfillmentStatus;
+}

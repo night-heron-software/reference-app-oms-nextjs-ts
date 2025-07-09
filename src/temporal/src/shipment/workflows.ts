@@ -6,6 +6,7 @@ import * as activities from './activities.js'; // Ensure this path is correct an
 import {
   ShipmentCarrierUpdateSignal,
   ShipmentInput,
+  ShipmentOutput,
   ShipmentResult,
   ShipmentStatus,
   Status
@@ -14,7 +15,7 @@ export const ShipmentStatusUpdatedSignalName = 'ShipmentStatusUpdated';
 
 const getShipmentStatus = wf.defineQuery<ShipmentStatus>('getShipmentStatus');
 
-const { bookShipment, updateShipmentStatus } = wf.proxyActivities<typeof activities>({
+const { bookShipment, updateShipmentStatusInDb } = wf.proxyActivities<typeof activities>({
   retry: {
     initialInterval: '1 minute',
     maximumInterval: '16 minute',
@@ -45,7 +46,7 @@ export const shipmentCarrierUpdateSignal = wf.defineSignal<[ShipmentCarrierUpdat
 async function updateStatus(shipmentContext: ShipmentContext, status: Status): Promise<void> {
   shipmentContext.status = status;
   shipmentContext.updatedAt = Temporal.Now.toString();
-  updateShipmentStatus(shipmentContext.id, status);
+  await updateShipmentStatusInDb(shipmentContext.id, status);
   const handle = getExternalWorkflowHandle(shipmentContext.requestorWorkflowId);
   await handle.signal(ShipmentStatusUpdatedSignalName, {
     shipmentId: shipmentContext.id,
@@ -53,8 +54,7 @@ async function updateStatus(shipmentContext: ShipmentContext, status: Status): P
     updatedAt: shipmentContext.updatedAt
   } as ShipmentStatusUpdatedSignal);
 }
-
-export async function ship(input: ShipmentInput): Promise<ShipmentResult> {
+export async function ship(input: ShipmentInput): Promise<ShipmentOutput> {
   log.info(`ship: ${JSON.stringify(input, null, 2)}`);
   if (!input?.id) {
     throw new Error('Order ID cannot be empty');
@@ -69,6 +69,7 @@ export async function ship(input: ShipmentInput): Promise<ShipmentResult> {
     status: 'pending' as Status,
     updatedAt: Temporal.Now.instant().toString()
   };
+
   const workflowId = wf.workflowInfo().workflowId;
   wf.setHandler(getShipmentStatus, () => {
     log.info(`getShipmentStatus called for: ${shipmentContext.id}`);
@@ -93,13 +94,11 @@ export async function ship(input: ShipmentInput): Promise<ShipmentResult> {
     await updateStatus(shipmentContext, status as Status);
 
     log.info(`Shipment status updated: ${status}`);
-    shipmentContext.status = status as Status;
-    shipmentContext.updatedAt = Temporal.Now.toString();
   });
 
   await wf.condition(() => shipmentContext.status === 'delivered');
   await wf.condition(wf.allHandlersFinished);
   log.info('shipment delivered');
 
-  return bookShipmentResult;
+  return { id: shipmentContext.id, status: shipmentContext.status };
 }

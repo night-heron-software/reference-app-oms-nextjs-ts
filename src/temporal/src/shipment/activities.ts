@@ -6,7 +6,7 @@ export async function bookShipment(input: BookShipmentInput): Promise<BookShipme
   return { courierReference: input.reference + ':1234' };
 }
 
-export async function updateShipmentStatus(id: string, status: Status): Promise<void> {
+export async function updateShipmentStatusInDb(id: string, status: Status): Promise<void> {
   const bookedAt = Temporal.Now.plainDateTimeISO().toString();
   const result =
     await db.sql`INSERT INTO shipments (id,booked_at,status) VALUES (${id}, ${bookedAt}, ${status}) ON CONFLICT(id) DO UPDATE SET status = ${status}`;

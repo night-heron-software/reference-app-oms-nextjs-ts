@@ -97,13 +97,15 @@ function x(order: OrderContext, status: OrderStatus): void {
   ON CONFLICT(id) DO UPDATE SET status = ${status}`;
 }
 
-export async function updateOrderStatus(order: OrderContext, status: OrderStatus): Promise<void> {
+export async function updateOrderStatusInDb(
+  order: OrderContext,
+  status: OrderStatus
+): Promise<void> {
   // Should this really update the order context?
-  order.status = status;
   const result = await db.sql`
     INSERT INTO orders (id, customer_id, status, received_at)
     VALUES (${order.id}, ${order.customerId}, ${order.status}, ${new Date().toISOString()})
     ON CONFLICT(id) DO UPDATE SET status = ${status}`;
 
-  log.info(`updateOrderStatus: ${JSON.stringify(result.rows[0], null, 2)}`);
+  log.info(`updateOrderStatus: ${JSON.stringify(order, null, 2)}`);
 }

@@ -1,7 +1,7 @@
 'use server';
 import 'server-only';
 
-import { shipmentIdToWorkflowId } from '@/temporal/lib/shipment/definitions';
+import { shipmentIdToWorkflowId } from '@/temporal/src/shipment/definitions';
 import {
   Action,
   OrderInput,

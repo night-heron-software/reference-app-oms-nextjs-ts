@@ -2,6 +2,7 @@
 
 import { fetchOrderById, sendCustomerActionSignal } from '@/actions/actions'; // Adjust the import path as necessary
 import { use, useEffect, useMemo, useState } from 'react';
+import { type OrderQueryResult } from '@/temporal/src/order/order';
 
 // Assuming components are converted to React and placed in a components directory
 // You might need to adjust these paths based on your project structure and path aliases
@@ -11,7 +12,6 @@ import Fulfillment from '@/components/Fulfillment'; // Corrected spelling
 import Heading from '@/components/Heading';
 import StatusBadge from '@/components/StatusBadge';
 // FIXME: need to find the correct way to share types between nextjs and temporal
-import type { OrderQueryResult } from '@/actions/client';
 
 import type { Action } from '@/types/order';
 import { send } from 'process';

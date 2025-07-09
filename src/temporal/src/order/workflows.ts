@@ -8,8 +8,10 @@ import { ship } from '../shipment/workflows.js';
 import * as activities from './activities.js';
 import {
   Fulfillment,
+  FulfillmentResult,
   OrderContext,
   OrderItem,
+  OrderStatus,
   Payment,
   ReserveItemsResult,
   shipmentStatusSignal,
@@ -18,7 +20,7 @@ import {
   type OrderOutput
 } from './order.js';
 
-const { reserveItems, updateOrderStatus } = wf.proxyActivities<typeof activities>({
+const { reserveItems, updateOrderStatusInDb } = wf.proxyActivities<typeof activities>({
   retry: {
     initialInterval: '1 minute',
     maximumInterval: '16 minute',
@@ -116,7 +118,7 @@ export async function order(input: OrderInput): Promise<OrderOutput> {
   await updateOrderStatus(orderContext, 'processing');
 
   const fulfillmentMap = new Map(orderContext.fulfillments.map((f) => [f.id, f]));
-
+  // FIXME: This signal never comes and fulfillment.shipment is never updated.
   wf.setHandler(shipmentStatusSignal, ({ shipmentId, status, updatedAt }) => {
     log.info(`Shipment status updated: ${shipmentId}, ${status}, ${updatedAt}`);
     // You can handle the shipment status update here if needed
@@ -131,7 +133,7 @@ export async function order(input: OrderInput): Promise<OrderOutput> {
       };
       log.info(`Shipment status updated for ${shipmentId}: ${status}`);
     } else {
-      console.warn(`No fulfillment found for shipment ID: ${shipmentId}`);
+      log.error(`No fulfillment found for shipment ID: ${shipmentId}`);
     }
   });
   // waits for payment to be processed before proceeding with shipment
@@ -141,6 +143,12 @@ export async function order(input: OrderInput): Promise<OrderOutput> {
   await updateOrderStatus(orderContext, 'completed');
   log.info(`order: ${JSON.stringify(orderContext, null, 2)}`);
   return orderContext;
+}
+
+async function updateOrderStatus(order: OrderContext, status: OrderStatus): Promise<void> {
+  order.status = status;
+  log.info(`Updating order status to ${status} for order: ${order.id}`);
+  await updateOrderStatusInDb(order, status);
 }
 
 function buildFulfillments(reserveItemsResult: ReserveItemsResult, order: OrderContext) {
@@ -201,18 +209,42 @@ async function runFulfillments(order: OrderContext) {
   });
 
   const fulfillmentResults = await Promise.all(fulfillmentPromises);
+  const fulfillmentResultMap = new Map(fulfillmentResults.map((result) => [result.id, result]));
+
+  order.fulfillments.forEach((fulfillment) => {
+    const result = fulfillmentResultMap.get(fulfillment.id);
+    if (result) {
+      fulfillment.status = result.status;
+      log.info(`Fulfillment ${fulfillment.id} status updated to ${fulfillment.status}`);
+    } else {
+      log.error(`No result found for fulfillment ${fulfillment.id}`);
+    }
+  });
 }
 
-export async function fulfill(fulfillment: Fulfillment) {
+export async function fulfill(fulfillment: Fulfillment): Promise<FulfillmentResult> {
   log.info(`processFulfillment(${fulfillment.id})`);
 
   if (fulfillment.status === 'cancelled') {
     log.info(`ignoring cancelled fulfillment ${fulfillment.id}`);
-    return undefined;
+    return { id: fulfillment.id, status: fulfillment.status };
   }
-
-  await processShipment(fulfillment);
   log.info(`Fulfillment ${fulfillment.id} processed successfully`);
+
+  const shipmentResult = await processShipment(fulfillment);
+  switch (shipmentResult.status) {
+    case 'delivered':
+      fulfillment.status = 'completed';
+      break;
+    default:
+      fulfillment.status = 'failed';
+      log.error(`Shipment ${shipmentResult.id} failed.`);
+      break;
+  }
+  return {
+    id: fulfillment.id,
+    status: fulfillment.status
+  };
 }
 
 function cancelUnavailableFulfillments(order: OrderContext): void {
@@ -304,7 +336,7 @@ export async function processPayment(fulfillment: Fulfillment): Promise<Payment 
   }
 }
 
-export async function processShipment(fulfillment: Fulfillment): Promise<string> {
+export async function processShipment(fulfillment: Fulfillment): Promise<shipment.ShipmentOutput> {
   log.info(`processShipment: ${JSON.stringify(fulfillment, null, 2)}`);
 
   const shipmentItems: shipment.ShipmentItem[] = fulfillment.items.map((item) => ({
@@ -329,14 +361,10 @@ export async function processShipment(fulfillment: Fulfillment): Promise<string>
       workflowExecutionTimeout: '2h',
       workflowTaskTimeout: '2m'
     });
+    return workflowResult;
     log.info(`shipment workflow result: ${JSON.stringify(workflowResult)}`);
   } catch (error) {
     log.error(`Error processing shipment for fulfillment ${fulfillment.id}: ${error}`);
-    return new Promise((resolve, reject) => {
-      reject(error);
-    });
+    return { id: fulfillment.id, status: 'failed' };
   }
-  return new Promise((resolve, reject) => {
-    resolve('Payment processed successfully');
-  });
 }
