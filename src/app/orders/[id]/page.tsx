@@ -1,8 +1,8 @@
 'use client';
 
 import { fetchOrderById, sendCustomerActionSignal } from '@/actions/actions'; // Adjust the import path as necessary
+import { orderIdToWorkflowId, type OrderQueryResult } from '@/temporal/src/order/order';
 import { use, useEffect, useMemo, useState } from 'react';
-import { type OrderQueryResult } from '@/temporal/src/order/order';
 
 // Assuming components are converted to React and placed in a components directory
 // You might need to adjust these paths based on your project structure and path aliases
@@ -14,8 +14,6 @@ import StatusBadge from '@/components/StatusBadge';
 // FIXME: need to find the correct way to share types between nextjs and temporal
 
 import type { Action } from '@/types/order';
-import { send } from 'process';
-import { orderWorkflowIdFromOrderId } from '@/temporal/lib/order/order';
 
 interface OrderPageProps {
   params: Promise<{ id: string }>;
@@ -55,7 +53,7 @@ export default function OrderPage(props: OrderPageProps) {
 
   const sendAction = async (action: Action) => {
     console.log(`Sending action: ${action} for order ID: ${id}`);
-    sendCustomerActionSignal(orderWorkflowIdFromOrderId(id), action);
+    sendCustomerActionSignal(orderIdToWorkflowId(id), action);
     refetchOrder();
   };
 

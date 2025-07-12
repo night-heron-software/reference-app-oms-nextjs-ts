@@ -1,5 +1,6 @@
 import * as wf from '@temporalio/workflow';
 
+import { Temporal } from '@js-temporal/polyfill';
 import { log, uuid4 } from '@temporalio/workflow';
 import * as billing from '../billing/definitions.js';
 import { charge } from '../billing/workflows.js';
@@ -7,8 +8,10 @@ import * as shipment from '../shipment/definitions.js';
 import { ship } from '../shipment/workflows.js';
 import * as activities from './activities.js';
 import {
+  FulfillInput,
   Fulfillment,
-  FulfillmentResult,
+  fulfillmentIdToWorkflowId,
+  FulfillOutput,
   OrderContext,
   OrderItem,
   OrderStatus,
@@ -66,7 +69,10 @@ export async function order(input: OrderInput): Promise<OrderOutput> {
     customerId: input.customerId,
     items: buildOrderItems(input),
     receivedAt: new Date().toISOString(),
-    status: 'pending'
+    status: 'pending',
+    fulfillments: [],
+    workflowId: wf.workflowInfo().workflowId,
+    updatedAt: Temporal.Now.plainDateTimeISO().toString()
   };
 
   log.info(`Order: ${JSON.stringify(orderContext, null, 2)} created!`);
@@ -118,25 +124,17 @@ export async function order(input: OrderInput): Promise<OrderOutput> {
   await updateOrderStatus(orderContext, 'processing');
 
   const fulfillmentMap = new Map(orderContext.fulfillments.map((f) => [f.id, f]));
-  // FIXME: This signal never comes and fulfillment.shipment is never updated.
-  wf.setHandler(shipmentStatusSignal, ({ shipmentId, status, updatedAt }) => {
-    log.info(`Shipment status updated: ${shipmentId}, ${status}, ${updatedAt}`);
-    // You can handle the shipment status update here if needed
-    const fulfillment = fulfillmentMap.get(shipmentId);
 
-    if (fulfillment) {
-      fulfillment.shipment = {
-        id: shipmentId,
-        status: status,
-        items: fulfillment.items,
-        updatedAt: updatedAt
-      };
+  wf.setHandler(shipmentStatusSignal, ({ shipmentId, status, updatedAt }) => {
+    const fulfillment = fulfillmentMap.get(shipmentId);
+    if (fulfillment?.shipment) {
+      fulfillment.shipment.updatedAt = updatedAt || new Date().toISOString();
+      fulfillment.shipment.status = status;
       log.info(`Shipment status updated for ${shipmentId}: ${status}`);
     } else {
       log.error(`No fulfillment found for shipment ID: ${shipmentId}`);
     }
   });
-  // waits for payment to be processed before proceeding with shipment
 
   await runFulfillments(orderContext);
   await wf.condition(wf.allHandlersFinished);
@@ -165,6 +163,12 @@ function buildFulfillments(reserveItemsResult: ReserveItemsResult, order: OrderC
     return {
       orderId: order.id,
       customerId: order.customerId,
+      shipment: {
+        id: id,
+        status: 'pending',
+        items: reservation.items,
+        updatedAt: Temporal.Now.plainDateTimeISO().toString()
+      },
       id: id,
       items: reservation.items,
       location: reservation.location,
@@ -198,11 +202,20 @@ async function runFulfillments(order: OrderContext) {
   });
 
   const fulfillmentPromises = order.fulfillments.map((fulfillment) => {
+    const fulfillInput: FulfillInput = {
+      orderWorkflowId: order.workflowId,
+      id: fulfillment.id,
+      items: fulfillment.items,
+      customerId: fulfillment.customerId,
+      status: fulfillment.status,
+      shipment: fulfillment.shipment
+    };
     log.info(`Starting fulfillment workflow for: ${fulfillment.id}`);
+
     return wf.executeChild(fulfill, {
-      args: [fulfillment],
+      args: [fulfillInput],
       taskQueue: 'orders',
-      workflowId: `Fulfill:${fulfillment.id}`,
+      workflowId: fulfillmentIdToWorkflowId(fulfillment.id),
       workflowExecutionTimeout: '2h',
       workflowTaskTimeout: '2m'
     });
@@ -222,28 +235,27 @@ async function runFulfillments(order: OrderContext) {
   });
 }
 
-export async function fulfill(fulfillment: Fulfillment): Promise<FulfillmentResult> {
-  log.info(`processFulfillment(${fulfillment.id})`);
-
-  if (fulfillment.status === 'cancelled') {
-    log.info(`ignoring cancelled fulfillment ${fulfillment.id}`);
-    return { id: fulfillment.id, status: fulfillment.status };
+export async function fulfill(fulfillInput: FulfillInput): Promise<FulfillOutput> {
+  if (fulfillInput.status === 'cancelled') {
+    log.info(`ignoring cancelled fulfillment ${fulfillInput.id}`);
+    return { id: fulfillInput.id, status: fulfillInput.status };
   }
-  log.info(`Fulfillment ${fulfillment.id} processed successfully`);
+  log.info(`Fulfillment ${fulfillInput.id} processed successfully`);
 
-  const shipmentResult = await processShipment(fulfillment);
+  const shipmentResult = await processShipment(fulfillInput);
+
   switch (shipmentResult.status) {
     case 'delivered':
-      fulfillment.status = 'completed';
+      fulfillInput.status = 'completed';
       break;
     default:
-      fulfillment.status = 'failed';
+      fulfillInput.status = 'failed';
       log.error(`Shipment ${shipmentResult.id} failed.`);
       break;
   }
   return {
-    id: fulfillment.id,
-    status: fulfillment.status
+    id: fulfillInput.id,
+    status: fulfillInput.status
   };
 }
 
@@ -336,35 +348,31 @@ export async function processPayment(fulfillment: Fulfillment): Promise<Payment 
   }
 }
 
-export async function processShipment(fulfillment: Fulfillment): Promise<shipment.ShipmentOutput> {
-  log.info(`processShipment: ${JSON.stringify(fulfillment, null, 2)}`);
-
-  const shipmentItems: shipment.ShipmentItem[] = fulfillment.items.map((item) => ({
+export async function processShipment(fulfillInput: FulfillInput): Promise<shipment.ShipOutput> {
+  const shipmentItems: shipment.ShipmentItem[] = fulfillInput.items.map((item) => ({
     sku: item.sku,
     quantity: item.quantity
   }));
 
-  const requestorWorkflowId = wf.workflowInfo().workflowId;
-  const shipmentInput: shipment.ShipmentInput = {
-    requestorWorkflowId: requestorWorkflowId,
-    id: fulfillment.id,
+  const workflowId = shipment.shipmentIdToWorkflowId(fulfillInput.id);
+
+  const shipInput: shipment.ShipInput = {
+    requestorWorkflowId: fulfillInput.orderWorkflowId,
+    id: fulfillInput.id,
     items: shipmentItems
   };
-  log.info(`shipmentInput: ${JSON.stringify(shipmentInput, null, 2)}`);
-  const workflowId = shipment.shipmentIdToWorkflowId(fulfillment.id);
-  log.info(`ship: workflowId: ${workflowId}`);
+
   try {
     const workflowResult = await wf.executeChild(ship, {
-      args: [shipmentInput],
+      args: [shipInput],
       taskQueue: 'shipments',
       workflowId: workflowId,
       workflowExecutionTimeout: '2h',
       workflowTaskTimeout: '2m'
     });
     return workflowResult;
-    log.info(`shipment workflow result: ${JSON.stringify(workflowResult)}`);
   } catch (error) {
-    log.error(`Error processing shipment for fulfillment ${fulfillment.id}: ${error}`);
-    return { id: fulfillment.id, status: 'failed' };
+    log.error(`Error processing shipment for fulfillment ${fulfillInput.id}: ${error}`);
+    return { id: fulfillInput.id, status: 'failed' };
   }
 }

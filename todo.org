@@ -26,7 +26,7 @@ CLOSED: [2025-07-08 Tue 10:12]
 
 ** Order detail page
 
-[[*** http://localhost:3000/orders/A4-1750691647363]]
+*** [[http://localhost:3000/orders/A4-1750691647363]]
 
 - status stuck in pending
 
@@ -65,3 +65,7 @@ export interface GreetingOutput {
 * TODO Tests
 
 * TODO Sort out relative imports and moduleResolution - see note in order.ts
+
+* TODO Make fulfillment work the same as the go demo
+
+** Make sure fulfillment information is correct in order workflow query

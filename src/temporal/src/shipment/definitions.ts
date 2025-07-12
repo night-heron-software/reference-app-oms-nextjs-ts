@@ -45,12 +45,12 @@ export interface ShipmentStatsResult {
   backlog: number;
 }
 // ShipmentInput is the input for a Shipment workflow.
-export interface ShipmentInput {
+export interface ShipInput {
   requestorWorkflowId: string;
   id: string;
   items: ShipmentItem[];
 }
-export interface ShipmentOutput {
+export interface ShipOutput {
   id: string;
   status: Status;
 }

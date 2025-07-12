@@ -1,15 +1,15 @@
 'use server';
 import 'server-only';
 
-import { shipmentIdToWorkflowId } from '@/temporal/src/shipment/definitions';
 import {
   Action,
   OrderInput,
   OrderQueryResult,
   Shipment,
   ShipmentStatus,
-  orderWorkflowIdFromOrderId
+  orderIdToWorkflowId
 } from '@/temporal/src/order/order';
+import { shipmentIdToWorkflowId } from '@/temporal/src/shipment/definitions';
 import { defineQuery, defineSignal } from '@temporalio/workflow';
 import { sql } from '@vercel/postgres';
 import { revalidatePath } from 'next/cache';
@@ -49,7 +49,7 @@ export async function createOrder(formData: FormData): Promise<void> {
     client.workflow
       .start('order', {
         taskQueue: 'orders',
-        workflowId: orderWorkflowIdFromOrderId(orderInput.id),
+        workflowId: orderIdToWorkflowId(orderInput.id),
         args: [orderInput],
         retry: {
           maximumAttempts: 4,
@@ -84,7 +84,7 @@ export async function fetchShipments(): Promise<Shipment[]> {
 }
 
 export async function fetchOrderById(id: string): Promise<OrderQueryResult | undefined> {
-  const workflowId = orderWorkflowIdFromOrderId(id);
+  const workflowId = orderIdToWorkflowId(id);
   const client = await getTemporalClient();
 
   const handle = client.workflow.getHandle(workflowId);

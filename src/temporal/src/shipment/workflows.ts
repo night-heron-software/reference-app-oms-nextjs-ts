@@ -5,9 +5,8 @@ import { getExternalWorkflowHandle, log } from '@temporalio/workflow';
 import * as activities from './activities.js'; // Ensure this path is correct and the module exists
 import {
   ShipmentCarrierUpdateSignal,
-  ShipmentInput,
-  ShipmentOutput,
-  ShipmentResult,
+  ShipInput,
+  ShipOutput,
   ShipmentStatus,
   Status
 } from './definitions.js';
@@ -45,7 +44,7 @@ export const shipmentCarrierUpdateSignal = wf.defineSignal<[ShipmentCarrierUpdat
 
 async function updateStatus(shipmentContext: ShipmentContext, status: Status): Promise<void> {
   shipmentContext.status = status;
-  shipmentContext.updatedAt = Temporal.Now.toString();
+  shipmentContext.updatedAt = Temporal.Now.plainDateTimeISO().toString();
   await updateShipmentStatusInDb(shipmentContext.id, status);
   const handle = getExternalWorkflowHandle(shipmentContext.requestorWorkflowId);
   await handle.signal(ShipmentStatusUpdatedSignalName, {
@@ -54,7 +53,7 @@ async function updateStatus(shipmentContext: ShipmentContext, status: Status): P
     updatedAt: shipmentContext.updatedAt
   } as ShipmentStatusUpdatedSignal);
 }
-export async function ship(input: ShipmentInput): Promise<ShipmentOutput> {
+export async function ship(input: ShipInput): Promise<ShipOutput> {
   log.info(`ship: ${JSON.stringify(input, null, 2)}`);
   if (!input?.id) {
     throw new Error('Order ID cannot be empty');

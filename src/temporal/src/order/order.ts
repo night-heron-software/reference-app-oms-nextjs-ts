@@ -44,11 +44,35 @@ export interface Fulfillment {
   status?: FulfillmentStatus;
 }
 
+export interface FulfillInput {
+  orderWorkflowId: string;
+  id: string;
+  items: OrderItem[];
+  customerId: string;
+  status?: FulfillmentStatus;
+  shipment?: Shipment;
+}
+
+export interface ShipmentInput {
+  orderWorkflowId: string;
+  id: string;
+  items: OrderItem[];
+  shipment: Shipment;
+}
+
+export function fulfillmentIdToWorkflowId(id: string): string {
+  return 'Fulfillment:' + id;
+}
+
+export function fulfillmentWorkflowIdToId(id: string): string {
+  return id.replace(/^Fulfillment:/, '');
+}
+
 export interface Shipment {
   id: string;
   status: string;
   items: OrderItem[];
-  updatedAt: Date;
+  updatedAt: string;
 }
 
 export type PaymentStatus = 'pending' | 'success' | 'failed';
@@ -94,7 +118,7 @@ export type ShipmentStatus = 'pending' | 'shipped' | 'timed_out' | 'cancelled';
 export interface ShipmentStatusUpdatedSignal {
   shipmentId: string;
   status: ShipmentStatus;
-  updatedAt: Date;
+  updatedAt: string;
 }
 
 export const shipmentStatusSignal =
@@ -122,11 +146,11 @@ export type ListOrderEntry = {
   received_at: string;
 };
 
-export function orderWorkflowIdFromOrderId(id: string): string {
+export function orderIdToWorkflowId(id: string): string {
   return 'Order:' + id;
 }
 
-export function orderIdFromOrderWorkflowId(id: string): string {
+export function orderWorkflowIdToId(id: string): string {
   return id.replace(/^Order:/, '');
 }
 
@@ -135,11 +159,13 @@ export interface OrderContext {
   customerId: string;
   items: OrderItem[];
   receivedAt: string;
-  fulfillments?: Fulfillment[];
+  fulfillments: Fulfillment[];
   status: OrderStatus;
+  workflowId: string;
+  updatedAt?: string;
 }
 
-export interface FulfillmentResult {
+export interface FulfillOutput {
   id: string;
   status: FulfillmentStatus;
 }
