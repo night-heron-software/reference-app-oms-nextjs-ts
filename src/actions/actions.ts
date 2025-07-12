@@ -6,17 +6,21 @@ import {
   OrderInput,
   OrderQueryResult,
   Shipment,
-  ShipmentStatus,
+  customerActionSignal,
+  getOrderStatus,
   orderIdToWorkflowId
-} from '@/temporal/src/order/order';
-import { shipmentIdToWorkflowId } from '@/temporal/src/shipment/definitions';
-import { defineQuery, defineSignal } from '@temporalio/workflow';
+} from '@/temporal/src/order/definitions';
+import {
+  ShipmentStatus,
+  getShipmentStatus,
+  shipmentCarrierUpdateSignal,
+  shipmentIdToWorkflowId
+} from '@/temporal/src/shipment/definitions';
+
 import { sql } from '@vercel/postgres';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { getTemporalClient } from './client';
-
-const getOrderStatus = defineQuery<OrderQueryResult>('getOrderStatus');
 
 export async function fetchOrder(id: string): Promise<OrderQueryResult | undefined> {
   const result = await sql`SELECT id, customer_id, status FROM orders WHERE id = ${id}`;
@@ -97,7 +101,6 @@ export async function fetchOrderById(id: string): Promise<OrderQueryResult | und
     return undefined;
   }
 }
-const getShipmentStatus = defineQuery<ShipmentStatus>('getShipmentStatus');
 
 export async function fetchShipmentById(id: string): Promise<ShipmentStatus | undefined> {
   const client = await getTemporalClient();
@@ -124,10 +127,6 @@ export interface ShipmentCarrierUpdateSignal {
   status: string;
 }
 
-const shipmentCarrierUpdateSignal = defineSignal<[ShipmentCarrierUpdateSignal]>(
-  'ShipmentCarrierUpdateSignalName'
-);
-
 export async function updateShipmentCarrierStatus(
   shipmentId: string,
   workflowId: string,
@@ -141,8 +140,6 @@ export async function updateShipmentCarrierStatus(
     console.warn(`Error updating shipment carrier status for ${shipmentId}:`, error);
   }
 }
-
-const customerActionSignal = defineSignal<[string]>('customerAction');
 
 export async function sendCustomerActionSignal(workflowId: string, action: Action): Promise<void> {
   const client = await getTemporalClient();

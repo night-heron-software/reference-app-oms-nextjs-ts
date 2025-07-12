@@ -8,11 +8,12 @@ import * as shipment from '../shipment/definitions.js';
 import { ship } from '../shipment/workflows.js';
 import * as activities from './activities.js';
 import {
+  customerActionSignal,
   FulfillInput,
   Fulfillment,
   fulfillmentIdToWorkflowId,
   FulfillOutput,
-  OrderContext,
+  getOrderStatus,
   OrderItem,
   OrderStatus,
   Payment,
@@ -21,7 +22,8 @@ import {
   type ItemInput,
   type OrderInput,
   type OrderOutput
-} from './order.js';
+} from './definitions.js';
+import { OrderContext } from './order.js';
 
 const { reserveItems, updateOrderStatusInDb } = wf.proxyActivities<typeof activities>({
   retry: {
@@ -32,21 +34,6 @@ const { reserveItems, updateOrderStatusInDb } = wf.proxyActivities<typeof activi
   },
   startToCloseTimeout: '2h'
 });
-
-function customerActionRequired(order: OrderContext): boolean {
-  if (!order.fulfillments || order.fulfillments.length === 0) {
-    log.info(`No fulfillments found for order: ${order.id}`);
-    return false;
-  }
-
-  for (const fulfillment of order.fulfillments) {
-    if (fulfillment.status === 'unavailable') {
-      log.info(`Customer action required for fulfillment: ${fulfillment.id}`);
-      return true; // Customer action is required
-    }
-  }
-  return false;
-}
 
 export async function order(input: OrderInput): Promise<OrderOutput> {
   if (!input) {
@@ -68,7 +55,7 @@ export async function order(input: OrderInput): Promise<OrderOutput> {
     id: input.id,
     customerId: input.customerId,
     items: buildOrderItems(input),
-    receivedAt: new Date().toISOString(),
+    receivedAt: Temporal.Now.plainDateTimeISO().toString(),
     status: 'pending',
     fulfillments: [],
     workflowId: wf.workflowInfo().workflowId,
@@ -120,6 +107,7 @@ export async function order(input: OrderInput): Promise<OrderOutput> {
     }
     break;
   }
+
   await wf.condition(wf.allHandlersFinished);
   await updateOrderStatus(orderContext, 'processing');
 
@@ -130,7 +118,6 @@ export async function order(input: OrderInput): Promise<OrderOutput> {
     if (fulfillment?.shipment) {
       fulfillment.shipment.updatedAt = updatedAt || new Date().toISOString();
       fulfillment.shipment.status = status;
-      log.info(`Shipment status updated for ${shipmentId}: ${status}`);
     } else {
       log.error(`No fulfillment found for shipment ID: ${shipmentId}`);
     }
@@ -138,9 +125,37 @@ export async function order(input: OrderInput): Promise<OrderOutput> {
 
   await runFulfillments(orderContext);
   await wf.condition(wf.allHandlersFinished);
+
   await updateOrderStatus(orderContext, 'completed');
-  log.info(`order: ${JSON.stringify(orderContext, null, 2)}`);
-  return orderContext;
+  return { status: orderContext.status };
+}
+
+export async function fulfill(fulfillInput: FulfillInput): Promise<FulfillOutput> {
+  if (fulfillInput.status === 'cancelled') {
+    return { id: fulfillInput.id, status: fulfillInput.status };
+  }
+
+  const shipmentResult = await runShipment(fulfillInput);
+
+  return {
+    id: fulfillInput.id,
+    status: shipmentResult.status == 'delivered' ? 'completed' : 'failed'
+  };
+}
+
+function customerActionRequired(order: OrderContext): boolean {
+  if (!order.fulfillments || order.fulfillments.length === 0) {
+    log.info(`No fulfillments found for order: ${order.id}`);
+    return false;
+  }
+
+  for (const fulfillment of order.fulfillments) {
+    if (fulfillment.status === 'unavailable') {
+      log.info(`Customer action required for fulfillment: ${fulfillment.id}`);
+      return true; // Customer action is required
+    }
+  }
+  return false;
 }
 
 async function updateOrderStatus(order: OrderContext, status: OrderStatus): Promise<void> {
@@ -235,30 +250,6 @@ async function runFulfillments(order: OrderContext) {
   });
 }
 
-export async function fulfill(fulfillInput: FulfillInput): Promise<FulfillOutput> {
-  if (fulfillInput.status === 'cancelled') {
-    log.info(`ignoring cancelled fulfillment ${fulfillInput.id}`);
-    return { id: fulfillInput.id, status: fulfillInput.status };
-  }
-  log.info(`Fulfillment ${fulfillInput.id} processed successfully`);
-
-  const shipmentResult = await processShipment(fulfillInput);
-
-  switch (shipmentResult.status) {
-    case 'delivered':
-      fulfillInput.status = 'completed';
-      break;
-    default:
-      fulfillInput.status = 'failed';
-      log.error(`Shipment ${shipmentResult.id} failed.`);
-      break;
-  }
-  return {
-    id: fulfillInput.id,
-    status: fulfillInput.status
-  };
-}
-
 function cancelUnavailableFulfillments(order: OrderContext): void {
   order.status = 'processing';
   order.fulfillments?.forEach((fulfillment) => {
@@ -269,27 +260,20 @@ function cancelUnavailableFulfillments(order: OrderContext): void {
   });
 
   log.info(`Order ${order.id} has been amended due to unavailable fulfillments.`);
-  // You might want to call an activity to update the order status in the database here
 }
 
 function cancelAllFulfillments(order: OrderContext): void {
   order.fulfillments?.forEach((fulfillment) => {
-    fulfillment.status = 'cancelled'; // Update each fulfillment status to 'cancelled'
+    fulfillment.status = 'cancelled';
   });
-  order.status = 'cancelled'; // Update the order status to 'cancelled'
+  updateOrderStatus(order, 'cancelled');
+  order.status = 'cancelled';
   log.info(`All fulfillments for order ${order.id} have been cancelled.`);
-  updateOrderStatus(order, 'cancelled'); // Update the order status in the database
-  // Do I need to update the database or notify any services about this cancellation?
-  // You might want to call an activity to update the order status in the database here
 }
 
 function reservationsFound(reserveItemsResult: ReserveItemsResult): boolean {
   return !!reserveItemsResult?.reservations?.length;
 }
-// How should this be made available to the client?
-export const getOrderStatus = wf.defineQuery<OrderContext>('getOrderStatus');
-
-export const customerActionSignal = wf.defineSignal<[string]>('customerAction');
 
 async function waitForCustomer(order: OrderContext): Promise<string> {
   let signalReceived = false;
@@ -348,7 +332,7 @@ export async function processPayment(fulfillment: Fulfillment): Promise<Payment 
   }
 }
 
-export async function processShipment(fulfillInput: FulfillInput): Promise<shipment.ShipOutput> {
+export async function runShipment(fulfillInput: FulfillInput): Promise<shipment.ShipOutput> {
   const shipmentItems: shipment.ShipmentItem[] = fulfillInput.items.map((item) => ({
     sku: item.sku,
     quantity: item.quantity

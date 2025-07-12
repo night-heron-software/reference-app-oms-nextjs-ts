@@ -40,7 +40,7 @@ export interface ChargeInput {
 }
 
 // ChargeResult is the result for the Charge workflow.
-export interface ChargeResult {
+export interface ChargeOutput {
   invoiceReference: string;
   subTotal: number;
   shipping: number;

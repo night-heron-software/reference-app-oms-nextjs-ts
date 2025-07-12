@@ -68,4 +68,7 @@ export interface GreetingOutput {
 
 * TODO Make fulfillment work the same as the go demo
 
-** Make sure fulfillment information is correct in order workflow query
+** DONE Make sure fulfillment information is correct in order workflow query
+CLOSED: [2025-07-12 Sat 11:27]
+
+* TODO Consolidate all workflow defnitions

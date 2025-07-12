@@ -1,10 +1,10 @@
 import React, { useMemo } from 'react';
 
-import type { Fulfillment as FulfillmentType } from '@/temporal/src/order/order';
+import type { Fulfillment as FulfillmentType } from '@/temporal/src/order/definitions';
 
 // Assuming these child components are converted to React (.tsx) and are in the same directory
 // or accessible via a path alias like '@/components/'
-import { OrderQueryResult } from '@/temporal/src/order/order';
+import { OrderQueryResult } from '@/temporal/src/order/definitions';
 import ItemDetails from './ItemDetails'; // Expects props like: { items: Item[] }
 import Payment from './Payment'; // Expects props like: { payment: PaymentDetails }
 import ShipmentProgress from './ShipmentProgress'; // Expects props like: { status: string }

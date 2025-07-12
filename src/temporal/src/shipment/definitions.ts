@@ -1,3 +1,5 @@
+import * as wf from '@temporalio/workflow';
+
 export interface ShipmentItem {
   sku: string;
   quantity: number;
@@ -84,3 +86,9 @@ export function shipmentIdToWorkflowId(id: string): string {
 export function workflowIdFromShipmentId(id: string): string {
   return id.replace(/^Ship:/, '');
 }
+
+export const shipmentCarrierUpdateSignal = wf.defineSignal<[ShipmentCarrierUpdateSignal]>(
+  'ShipmentCarrierUpdateSignalName'
+);
+
+export const getShipmentStatus = wf.defineQuery<ShipmentStatus>('getShipmentStatus');

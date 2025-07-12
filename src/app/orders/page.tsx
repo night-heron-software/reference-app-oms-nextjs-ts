@@ -4,7 +4,7 @@ import { fetchOrders } from '@/actions/actions'; // Adjust the import path as ne
 import Button from '@/components/Button';
 import Link from '@/components/Link';
 import StatusBadge from '@/components/StatusBadge';
-import { OrderQueryResult } from '@/temporal/src/order/order';
+import { OrderQueryResult } from '@/temporal/src/order/definitions';
 import type { TableColumns, TableData } from '@/types/ui'; // Adjust the import path as necessary
 import { useRouter } from 'next/navigation';
 import React, { useEffect, useState } from 'react';

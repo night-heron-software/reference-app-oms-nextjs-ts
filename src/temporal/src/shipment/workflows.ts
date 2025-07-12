@@ -4,15 +4,14 @@ import { Temporal } from '@js-temporal/polyfill';
 import { getExternalWorkflowHandle, log } from '@temporalio/workflow';
 import * as activities from './activities.js'; // Ensure this path is correct and the module exists
 import {
-  ShipmentCarrierUpdateSignal,
   ShipInput,
   ShipOutput,
-  ShipmentStatus,
-  Status
+  ShipmentStatusUpdatedSignal,
+  Status,
+  getShipmentStatus,
+  shipmentCarrierUpdateSignal
 } from './definitions.js';
 export const ShipmentStatusUpdatedSignalName = 'ShipmentStatusUpdated';
-
-const getShipmentStatus = wf.defineQuery<ShipmentStatus>('getShipmentStatus');
 
 const { bookShipment, updateShipmentStatusInDb } = wf.proxyActivities<typeof activities>({
   retry: {
@@ -31,28 +30,6 @@ interface ShipmentContext {
   updatedAt: string;
 }
 
-//const ShipmentStatusUpdatedSignalName = 'ShipmentStatusUpdated';
-export interface ShipmentStatusUpdatedSignal {
-  shipmentId: string;
-  status: Status;
-  updatedAt: string;
-}
-
-export const shipmentCarrierUpdateSignal = wf.defineSignal<[ShipmentCarrierUpdateSignal]>(
-  'ShipmentCarrierUpdateSignalName'
-);
-
-async function updateStatus(shipmentContext: ShipmentContext, status: Status): Promise<void> {
-  shipmentContext.status = status;
-  shipmentContext.updatedAt = Temporal.Now.plainDateTimeISO().toString();
-  await updateShipmentStatusInDb(shipmentContext.id, status);
-  const handle = getExternalWorkflowHandle(shipmentContext.requestorWorkflowId);
-  await handle.signal(ShipmentStatusUpdatedSignalName, {
-    shipmentId: shipmentContext.id,
-    status: status,
-    updatedAt: shipmentContext.updatedAt
-  } as ShipmentStatusUpdatedSignal);
-}
 export async function ship(input: ShipInput): Promise<ShipOutput> {
   log.info(`ship: ${JSON.stringify(input, null, 2)}`);
   if (!input?.id) {
@@ -86,11 +63,11 @@ export async function ship(input: ShipInput): Promise<ShipOutput> {
     items: input.items
   });
 
-  await updateStatus(shipmentContext, 'booked');
+  await updateShipmentStatus(shipmentContext, 'booked');
 
   wf.setHandler(shipmentCarrierUpdateSignal, async (parms) => {
     const status = parms.status;
-    await updateStatus(shipmentContext, status as Status);
+    await updateShipmentStatus(shipmentContext, status as Status);
 
     log.info(`Shipment status updated: ${status}`);
   });
@@ -100,4 +77,19 @@ export async function ship(input: ShipInput): Promise<ShipOutput> {
   log.info('shipment delivered');
 
   return { id: shipmentContext.id, status: shipmentContext.status };
+}
+
+async function updateShipmentStatus(
+  shipmentContext: ShipmentContext,
+  status: Status
+): Promise<void> {
+  shipmentContext.status = status;
+  shipmentContext.updatedAt = Temporal.Now.plainDateTimeISO().toString();
+  await updateShipmentStatusInDb(shipmentContext.id, status);
+  const handle = getExternalWorkflowHandle(shipmentContext.requestorWorkflowId);
+  await handle.signal(ShipmentStatusUpdatedSignalName, {
+    shipmentId: shipmentContext.id,
+    status: status,
+    updatedAt: shipmentContext.updatedAt
+  } as ShipmentStatusUpdatedSignal);
 }

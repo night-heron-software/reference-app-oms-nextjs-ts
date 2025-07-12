@@ -1,13 +1,13 @@
 import { log } from '@temporalio/activity';
 import { db } from '@vercel/postgres';
 import {
-  OrderContext,
   OrderItem,
   OrderStatus,
   Reservation,
   ReserveItemsInput,
   ReserveItemsResult
-} from './order.js';
+} from './definitions.js';
+import { OrderContext } from './order.js';
 
 export async function reserveItems(input: ReserveItemsInput): Promise<ReserveItemsResult> {
   log.info(`reserveItems: ${JSON.stringify(input, null, 2)}`);
@@ -71,37 +71,16 @@ export async function reserveItems(input: ReserveItemsInput): Promise<ReserveIte
   };
 }
 
-export async function insertOrder(order: OrderContext): Promise<OrderContext> {
-  const result = await db.sql`
-    INSERT INTO orders (id, customer_id, status, received_at)
-    VALUES (${order.id}, ${order.customerId}, ${order.status}, ${new Date().toISOString()})
-    RETURNING id, customer_id, status, received_at
-  `;
-  if (result.rows.length === 0) {
-    throw new Error('Failed to insert order');
-  }
-  return result.rows[0] as OrderContext;
-}
-
 export async function fetchOrders(): Promise<OrderContext[]> {
   const result =
     await db.sql`SELECT id, customer_id, status, received_at FROM orders ORDER BY received_at DESC`;
   return result.rows as OrderContext[];
 }
 
-function x(order: OrderContext, status: OrderStatus): void {
-  db.sql`
-    INSERT INTO orders (id, customer_id, status, received_at)
-    VALUES (${order.id}, ${order.customerId}, ${order.status}, ${new Date().toISOString()})
-    RETURNING id, customer_id, status, received_at
-  ON CONFLICT(id) DO UPDATE SET status = ${status}`;
-}
-
 export async function updateOrderStatusInDb(
   order: OrderContext,
   status: OrderStatus
 ): Promise<void> {
-  // Should this really update the order context?
   const result = await db.sql`
     INSERT INTO orders (id, customer_id, status, received_at)
     VALUES (${order.id}, ${order.customerId}, ${order.status}, ${new Date().toISOString()})

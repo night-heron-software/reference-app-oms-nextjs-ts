@@ -19,8 +19,8 @@ export interface Payment {
 }
 
 // }
-import type { Payment as PaymentType } from '@/temporal/src/order/order';
-import type { PaymentStatus } from '@/temporal/src/order/order';
+import type { Payment as PaymentType } from '@/temporal/src/order/definitions';
+import type { PaymentStatus } from '@/temporal/src/order/definitions';
 
 // Assuming capitalize utility is in a shared location, e.g., @/utils/formatting
 // You would need to create/update this file (e.g., src/utils/formatting.ts) with:

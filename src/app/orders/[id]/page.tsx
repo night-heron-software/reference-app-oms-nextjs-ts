@@ -1,7 +1,7 @@
 'use client';
 
 import { fetchOrderById, sendCustomerActionSignal } from '@/actions/actions'; // Adjust the import path as necessary
-import { orderIdToWorkflowId, type OrderQueryResult } from '@/temporal/src/order/order';
+import { orderIdToWorkflowId, type OrderQueryResult } from '@/temporal/src/order/definitions';
 import { use, useEffect, useMemo, useState } from 'react';
 
 // Assuming components are converted to React and placed in a components directory
