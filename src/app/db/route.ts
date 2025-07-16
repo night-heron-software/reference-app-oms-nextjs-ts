@@ -5,8 +5,20 @@ import { db } from '@vercel/postgres';
 const client = await db.connect();
 
 export async function setupTables() {
+  await client.sql`DROP TABLE IF EXISTS settings`;
   await client.sql`DROP INDEX IF EXISTS orders_received_at`;
   await client.sql`DROP TABLE IF EXISTS orders`;
+
+  await client.sql`
+    CREATE TABLE IF NOT EXISTS settings (
+      name VARCHAR(255) PRIMARY KEY NOT NULL,
+      value JSONB NOT NULL
+   )`;
+
+  await client.sql`
+    INSERT INTO settings (name, value)
+    VALUES ('fraud', '{"limit": 100, "maintenanceMode": false}')
+    ON CONFLICT (name) DO NOTHING`;
 
   await client.sql`
     CREATE TABLE IF NOT EXISTS orders (

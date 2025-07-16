@@ -52,9 +52,12 @@ export default function OrderPage(props: OrderPageProps) {
   }, []);
 
   const sendAction = async (action: Action) => {
+    setActionLoading(true);
     console.log(`Sending action: ${action} for order ID: ${id}`);
     sendCustomerActionSignal(orderIdToWorkflowId(id), action);
+    await new Promise((resolve) => setTimeout(resolve, 10000));
     refetchOrder();
+    setActionLoading(false);
   };
 
   const actionRequired = useMemo(() => {

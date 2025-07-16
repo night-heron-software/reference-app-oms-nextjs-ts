@@ -32,6 +32,22 @@ export async function fetchOrder(id: string): Promise<OrderQueryResult | undefin
   }
 }
 
+export interface FraudSettings {
+  limit: number;
+  maintenanceMode: boolean;
+}
+
+export async function fetchFraudSettings(): Promise<FraudSettings> {
+  const result = await sql`SELECT value FROM settings WHERE name = 'fraud'`;
+  console.log(`fetchFraudSettings: ${JSON.stringify(result.rows, null, 2)}`);
+  return (
+    (result.rows[0]?.value as FraudSettings) || {
+      limit: 0,
+      maintenanceMode: false
+    }
+  );
+}
+
 export async function fetchOrders(): Promise<OrderQueryResult[]> {
   const result = await sql`SELECT id, status, received_at FROM orders ORDER BY received_at DESC`;
   return result.rows as OrderQueryResult[];

@@ -1,20 +1,14 @@
 'use client';
 
-import { fetchOrders } from '@/actions/actions'; // Adjust the import path as necessary
+import { fetchOrders } from '@/actions/actions';
 import Button from '@/components/Button';
 import Link from '@/components/Link';
 import StatusBadge from '@/components/StatusBadge';
 import { OrderQueryResult } from '@/temporal/src/order/definitions';
-import type { TableColumns, TableData } from '@/types/ui'; // Adjust the import path as necessary
+import type { TableColumns, TableData } from '@/types/ui';
 import { useRouter } from 'next/navigation';
-import React, { useEffect, useState } from 'react';
-import TableWithHeader from '../../components/TableWithHeader';
-
-export interface ColumnDefinition<TData extends Record<string, any>> {
-  title: string;
-  key: keyof TData | (string & {}); // Allows string keys while preferring keyof TData for type safety
-  render: (value: TData[keyof TData], record: TData, index: number) => React.ReactNode;
-}
+import { useEffect, useState } from 'react';
+import TableWithHeader from '@/components/TableWithHeader';
 
 function OrdersPage() {
   const [orders, setOrders] = useState<OrderQueryResult[]>(); // Initialize state for orders

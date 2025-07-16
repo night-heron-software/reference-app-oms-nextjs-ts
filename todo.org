@@ -71,4 +71,7 @@ export interface GreetingOutput {
 ** DONE Make sure fulfillment information is correct in order workflow query
 CLOSED: [2025-07-12 Sat 11:27]
 
-* TODO Consolidate all workflow defnitions
+* DONE Consolidate all workflow defnitions
+CLOSED: [2025-07-12 Sat 15:34]
+
+* TODO fulfillment status on order not updated for amended orders

@@ -3,12 +3,12 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import type { TableColumns, TableData } from '@/types/ui';
 import Heading from './Heading';
-import clsx from 'clsx'; // You might need to install 'clsx': npm install clsx
+import clsx from 'clsx';
 
 interface TableWithHeaderProps {
   title: string;
   description?: string;
-  action?: () => React.ReactNode; // Svelte Snippet is like a render prop or function that returns JSX
+  action?: () => React.ReactNode;
   columns: TableColumns;
   data: TableData;
 }
@@ -95,7 +95,6 @@ const TableWithHeader: React.FC<TableWithHeaderProps> = ({
                           } else {
                             content = value;
                           }
-
                           return (
                             <td
                               key={column.key} // Use column.key for cell key

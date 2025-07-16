@@ -1,9 +1,8 @@
 export interface Persona {
   role: string;
-  link: string; // Assuming 'link' is a property used by the Link component
+  link: string;
   description: string;
-  // Add other properties of a persona if they exist
-  [key: string]: any; // Allow other properties
+  [key: string]: any;
 }
 type ComponentRef = {
   type: React.ComponentType<any>;

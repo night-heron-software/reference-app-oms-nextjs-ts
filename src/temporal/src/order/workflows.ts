@@ -15,6 +15,7 @@ import {
   FulfillOutput,
   getOrderStatus,
   OrderItem,
+  OrderQueryResult,
   OrderStatus,
   Payment,
   ReserveItemsResult,
@@ -68,7 +69,7 @@ export async function order(input: OrderInput): Promise<OrderOutput> {
     log.info(`getOrderStatus called for order: ${orderContext.id}`);
     // OrderContext is the same as OrderContext but the types might diverge in the future.
     // If so, we map that here.
-    return orderContext as OrderContext;
+    return orderContext as OrderQueryResult;
   });
 
   const reserveItemsResult = await reserveItems({
@@ -93,6 +94,7 @@ export async function order(input: OrderInput): Promise<OrderOutput> {
 
     if (customerAction === 'amend') {
       cancelUnavailableFulfillments(orderContext);
+      log.info(`Amended orderContext: ${JSON.stringify(orderContext, null, 2)}`);
     } else if (customerAction === 'cancel') {
       cancelAllFulfillments(orderContext);
       updateOrderStatus(orderContext, 'cancelled');
@@ -108,7 +110,6 @@ export async function order(input: OrderInput): Promise<OrderOutput> {
     break;
   }
 
-  await wf.condition(wf.allHandlersFinished);
   await updateOrderStatus(orderContext, 'processing');
 
   const fulfillmentMap = new Map(orderContext.fulfillments.map((f) => [f.id, f]));
@@ -251,10 +252,12 @@ async function runFulfillments(order: OrderContext) {
 }
 
 function cancelUnavailableFulfillments(order: OrderContext): void {
-  order.status = 'processing';
   order.fulfillments?.forEach((fulfillment) => {
     if (fulfillment.status === 'unavailable') {
       fulfillment.status = 'cancelled'; // Update status to 'cancelled'
+      if (fulfillment.shipment) {
+        fulfillment.shipment.status = 'cancelled'; // Update shipment status to 'cancelled'
+      }
       log.info(`Fulfillment ${fulfillment.id} has been cancelled due to unavailability.`);
     }
   });
@@ -265,6 +268,9 @@ function cancelUnavailableFulfillments(order: OrderContext): void {
 function cancelAllFulfillments(order: OrderContext): void {
   order.fulfillments?.forEach((fulfillment) => {
     fulfillment.status = 'cancelled';
+    if (fulfillment.shipment) {
+      fulfillment.shipment.status = 'cancelled'; // Update shipment status to 'cancelled'
+    }
   });
   updateOrderStatus(order, 'cancelled');
   order.status = 'cancelled';
@@ -347,14 +353,14 @@ export async function runShipment(fulfillInput: FulfillInput): Promise<shipment.
   };
 
   try {
-    const workflowResult = await wf.executeChild(ship, {
+    const shipOutput = await wf.executeChild(ship, {
       args: [shipInput],
       taskQueue: 'shipments',
       workflowId: workflowId,
       workflowExecutionTimeout: '2h',
       workflowTaskTimeout: '2m'
     });
-    return workflowResult;
+    return shipOutput;
   } catch (error) {
     log.error(`Error processing shipment for fulfillment ${fulfillInput.id}: ${error}`);
     return { id: fulfillInput.id, status: 'failed' };
