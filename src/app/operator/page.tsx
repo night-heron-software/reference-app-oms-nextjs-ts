@@ -1,23 +1,19 @@
+// WARNING: This is only an initial version which doesn't actually work.
+
 'use client';
 
-import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 
-// NOTE: Component paths are assumed to be configured with an alias like `@/`.
-import Heading from '@/components/Heading';
-import Card from '@/components/Card';
 import Button from '@/components/Button';
+import Card from '@/components/Card';
 import Charts from '@/components/Charts';
+import Heading from '@/components/Heading';
 
-// Define the shape of the config object for type safety.
 interface LoadGeneratorConfig {
   ordersPerSecond?: number;
 }
 
-/**
- * In a real Next.js app, these props would likely be passed from a parent
- * Server Component which fetches the initial data.
- */
 interface OperatorPageProps {
   running: boolean;
   config: LoadGeneratorConfig;
@@ -26,22 +22,15 @@ interface OperatorPageProps {
 export default function OperatorPage() {
   const router = useRouter();
   const { running, config } = { running: false, config: {} };
-  // State for the controlled input, initialized from props.
   const [newLimit, setNewLimit] = useState(1);
 
-  // This effect syncs the local state with the `config` prop when it changes.
-  // This mirrors the behavior of Svelte's `$derived`.
-  /* useEffect(() => {
-    setNewLimit(config.ordersPerSecond ?? 1);
-  }, [config.ordersPerSecond]);
- */
   const onStop = async () => {
     await fetch('/api/load-generator', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action: 'stop' })
     });
-    router.refresh(); // Re-fetch server data and re-render.
+    router.refresh();
   };
 
   const onStart = async () => {
@@ -50,7 +39,7 @@ export default function OperatorPage() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action: 'start', config: { ...config, ordersPerSecond: newLimit } })
     });
-    router.refresh(); // Re-fetch server data and re-render.
+    router.refresh();
   };
 
   const onToggle = async () => {

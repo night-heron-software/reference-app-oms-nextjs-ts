@@ -65,7 +65,7 @@ export default function OrderPage(props: OrderPageProps) {
   }, [order]);
 
   if (pageLoading) {
-    return <div className="p-4">Loading order details...</div>; // Or a spinner component
+    return <Heading>Loading order details...</Heading>;
   }
 
   if (!order) {

@@ -9,22 +9,26 @@ import type { TableColumns, TableData } from '@/types/ui';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import TableWithHeader from '@/components/TableWithHeader';
+import Heading from '@/components/Heading';
 
 function OrdersPage() {
-  const [orders, setOrders] = useState<OrderQueryResult[]>(); // Initialize state for orders
+  const [orders, setOrders] = useState<OrderQueryResult[]>();
+  const [loading, setLoading] = useState(true);
 
   const router = useRouter();
 
   useEffect(() => {
-    const fetchData = async () => {
+    const getOrders = async () => {
+      setLoading(true);
       try {
         const orders = await fetchOrders();
+        setLoading(false);
         setOrders(orders);
       } catch (error) {
         console.error('Error fetching orders:', error);
       }
     };
-    fetchData();
+    getOrders();
   }, []);
 
   // Define columns for the TableWithHeader component
@@ -57,6 +61,9 @@ function OrdersPage() {
       })
     }
   ];
+  if (loading) {
+    return <Heading>Loading orders...</Heading>;
+  }
 
   return (
     <TableWithHeader
