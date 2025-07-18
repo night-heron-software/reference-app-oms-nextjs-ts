@@ -67,7 +67,7 @@ export async function order(input: OrderInput): Promise<OrderOutput> {
 
   wf.setHandler(getOrderStatus, () => {
     log.info(`getOrderStatus called for order: ${orderContext.id}`);
-    // OrderContext is the same as OrderContext but the types might diverge in the future.
+    // OrderQueryResult is the same as OrderContext but the types might diverge in the future.
     // If so, we map that here.
     return orderContext as OrderQueryResult;
   });
