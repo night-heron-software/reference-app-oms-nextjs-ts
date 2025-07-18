@@ -181,7 +181,7 @@ function buildFulfillments(reserveItemsResult: ReserveItemsResult, order: OrderC
       customerId: order.customerId,
       shipment: {
         id: id,
-        status: 'pending',
+        status: status,
         items: reservation.items,
         updatedAt: Temporal.Now.plainDateTimeISO().toString()
       },

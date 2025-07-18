@@ -1,5 +1,3 @@
-// WARNING: This is only an initial version which doesn't actually work.
-
 'use client';
 
 import { useRouter } from 'next/navigation';

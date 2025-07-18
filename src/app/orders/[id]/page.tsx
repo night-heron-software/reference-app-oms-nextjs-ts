@@ -55,7 +55,6 @@ export default function OrderPage(props: OrderPageProps) {
     setActionLoading(true);
     console.log(`Sending action: ${action} for order ID: ${id}`);
     sendCustomerActionSignal(orderIdToWorkflowId(id), action);
-    await new Promise((resolve) => setTimeout(resolve, 10000));
     refetchOrder();
     setActionLoading(false);
   };
