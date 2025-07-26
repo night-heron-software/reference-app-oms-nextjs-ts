@@ -13,5 +13,5 @@
       "@/*": ["./src/*"]
     }
   },
-  "include": ["src/**/*.ts", "src/order/definitions.ts", "temporal/src/order/order.ts"]
+  "include": ["src/**/*.ts"]
 }
