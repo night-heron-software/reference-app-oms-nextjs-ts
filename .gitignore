@@ -45,3 +45,6 @@ next-env.d.ts
 lib
 
 /*.db
+*.go
+*.svelte
+*/local.db

@@ -1,0 +1,778 @@
+{
+  "events": [
+    {
+      "eventId": "1",
+      "eventTime": "2025-06-25T15:53:54.381784Z",
+      "eventType": "EVENT_TYPE_WORKFLOW_EXECUTION_STARTED",
+      "taskId": "1048763",
+      "workflowExecutionStartedEventAttributes": {
+        "workflowType": {
+          "name": "Shipment"
+        },
+        "parentWorkflowNamespace": "default",
+        "parentWorkflowNamespaceId": "566d51ff-d944-4578-9185-38d087f87526",
+        "parentWorkflowExecution": {
+          "workflowId": "Order:A3-1750866822147",
+          "runId": "6820a81d-df0c-42fc-be75-a10d1bf78aae"
+        },
+        "parentInitiatedEventId": "28",
+        "taskQueue": {
+          "name": "shipments",
+          "kind": "TASK_QUEUE_KIND_NORMAL"
+        },
+        "input": {
+          "payloads": [
+            {
+              "metadata": {
+                "encoding": "anNvbi9wbGFpbg==",
+                "encodingDecoded": "json/plain"
+              },
+              "data": {
+                "RequestorWID": "Order:A3-1750866822147",
+                "ID": "A3-1750866822147:3",
+                "Items": [
+                  {
+                    "sku": "Under Armour HOVR Sonic",
+                    "quantity": 2
+                  },
+                  {
+                    "sku": "Under Armour HOVR Sonic",
+                    "quantity": 3
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "workflowExecutionTimeout": "0s",
+        "workflowRunTimeout": "0s",
+        "workflowTaskTimeout": "10s",
+        "originalExecutionRunId": "52643f64-edb6-477a-bfa0-12be2a1082d8",
+        "firstExecutionRunId": "52643f64-edb6-477a-bfa0-12be2a1082d8",
+        "attempt": 1,
+        "firstWorkflowTaskBackoff": "0s",
+        "header": {},
+        "workflowId": "Shipment:A3-1750866822147:3",
+        "rootWorkflowExecution": {
+          "workflowId": "Order:A3-1750866822147",
+          "runId": "6820a81d-df0c-42fc-be75-a10d1bf78aae"
+        }
+      }
+    },
+    {
+      "eventId": "2",
+      "eventTime": "2025-06-25T15:53:54.386748Z",
+      "eventType": "EVENT_TYPE_WORKFLOW_TASK_SCHEDULED",
+      "taskId": "1048776",
+      "workflowTaskScheduledEventAttributes": {
+        "taskQueue": {
+          "name": "shipments",
+          "kind": "TASK_QUEUE_KIND_NORMAL"
+        },
+        "startToCloseTimeout": "10s",
+        "attempt": 1
+      }
+    },
+    {
+      "eventId": "3",
+      "eventTime": "2025-06-25T15:53:54.395499Z",
+      "eventType": "EVENT_TYPE_WORKFLOW_TASK_STARTED",
+      "taskId": "1048782",
+      "workflowTaskStartedEventAttributes": {
+        "scheduledEventId": "2",
+        "identity": "44724@Jeffs-MacBook-Pro.local@",
+        "requestId": "6e9ce0e3-ab3a-45a8-ad2c-4a9bc5626fc4",
+        "historySizeBytes": "609",
+        "workerVersion": {
+          "buildId": "0d7767616bf364b6e66830129586c79c"
+        }
+      }
+    },
+    {
+      "eventId": "4",
+      "eventTime": "2025-06-25T15:53:54.403270Z",
+      "eventType": "EVENT_TYPE_WORKFLOW_TASK_COMPLETED",
+      "taskId": "1048794",
+      "workflowTaskCompletedEventAttributes": {
+        "scheduledEventId": "2",
+        "startedEventId": "3",
+        "identity": "44724@Jeffs-MacBook-Pro.local@",
+        "workerVersion": {
+          "buildId": "0d7767616bf364b6e66830129586c79c"
+        },
+        "sdkMetadata": {
+          "langUsedFlags": [
+            3
+          ],
+          "sdkName": "temporal-go",
+          "sdkVersion": "1.34.0"
+        },
+        "meteringMetadata": {}
+      }
+    },
+    {
+      "eventId": "5",
+      "eventTime": "2025-06-25T15:53:54.403306Z",
+      "eventType": "EVENT_TYPE_ACTIVITY_TASK_SCHEDULED",
+      "taskId": "1048795",
+      "activityTaskScheduledEventAttributes": {
+        "activityId": "5",
+        "activityType": {
+          "name": "BookShipment"
+        },
+        "taskQueue": {
+          "name": "shipments",
+          "kind": "TASK_QUEUE_KIND_NORMAL"
+        },
+        "header": {},
+        "input": {
+          "payloads": [
+            {
+              "metadata": {
+                "encoding": "anNvbi9wbGFpbg==",
+                "encodingDecoded": "json/plain"
+              },
+              "data": {
+                "Reference": "A3-1750866822147:3",
+                "Items": [
+                  {
+                    "sku": "Under Armour HOVR Sonic",
+                    "quantity": 2
+                  },
+                  {
+                    "sku": "Under Armour HOVR Sonic",
+                    "quantity": 3
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "scheduleToCloseTimeout": "0s",
+        "scheduleToStartTimeout": "0s",
+        "startToCloseTimeout": "5s",
+        "heartbeatTimeout": "0s",
+        "workflowTaskCompletedEventId": "4",
+        "retryPolicy": {
+          "initialInterval": "1s",
+          "backoffCoefficient": 2,
+          "maximumInterval": "100s"
+        },
+        "useWorkflowBuildId": true
+      }
+    },
+    {
+      "eventId": "6",
+      "eventTime": "2025-06-25T15:53:54.408169Z",
+      "eventType": "EVENT_TYPE_ACTIVITY_TASK_STARTED",
+      "taskId": "1048809",
+      "activityTaskStartedEventAttributes": {
+        "scheduledEventId": "5",
+        "identity": "44724@Jeffs-MacBook-Pro.local@",
+        "requestId": "68b23b2e-b4d6-440a-9371-46c43a27fc86",
+        "attempt": 1,
+        "workerVersion": {
+          "buildId": "0d7767616bf364b6e66830129586c79c"
+        }
+      }
+    },
+    {
+      "eventId": "7",
+      "eventTime": "2025-06-25T15:53:54.420869Z",
+      "eventType": "EVENT_TYPE_ACTIVITY_TASK_COMPLETED",
+      "taskId": "1048810",
+      "activityTaskCompletedEventAttributes": {
+        "result": {
+          "payloads": [
+            {
+              "metadata": {
+                "encoding": "anNvbi9wbGFpbg==",
+                "encodingDecoded": "json/plain"
+              },
+              "data": {
+                "CourierReference": "A3-1750866822147:3:1234"
+              }
+            }
+          ]
+        },
+        "scheduledEventId": "5",
+        "startedEventId": "6",
+        "identity": "44724@Jeffs-MacBook-Pro.local@"
+      }
+    },
+    {
+      "eventId": "8",
+      "eventTime": "2025-06-25T15:53:54.420874Z",
+      "eventType": "EVENT_TYPE_WORKFLOW_TASK_SCHEDULED",
+      "taskId": "1048811",
+      "workflowTaskScheduledEventAttributes": {
+        "taskQueue": {
+          "name": "Jeffs-MacBook-Pro.local:ce731fde-e6da-44ea-b1f1-68d451731a61",
+          "kind": "TASK_QUEUE_KIND_STICKY",
+          "normalName": "shipments"
+        },
+        "startToCloseTimeout": "10s",
+        "attempt": 1
+      }
+    },
+    {
+      "eventId": "9",
+      "eventTime": "2025-06-25T15:53:54.425778Z",
+      "eventType": "EVENT_TYPE_WORKFLOW_TASK_STARTED",
+      "taskId": "1048821",
+      "workflowTaskStartedEventAttributes": {
+        "scheduledEventId": "8",
+        "identity": "44724@Jeffs-MacBook-Pro.local@",
+        "requestId": "ceb5f00f-efdf-4071-987f-6ecf08b4d3a2",
+        "historySizeBytes": "1528",
+        "workerVersion": {
+          "buildId": "0d7767616bf364b6e66830129586c79c"
+        }
+      }
+    },
+    {
+      "eventId": "10",
+      "eventTime": "2025-06-25T15:53:54.436402Z",
+      "eventType": "EVENT_TYPE_WORKFLOW_TASK_COMPLETED",
+      "taskId": "1048833",
+      "workflowTaskCompletedEventAttributes": {
+        "scheduledEventId": "8",
+        "startedEventId": "9",
+        "identity": "44724@Jeffs-MacBook-Pro.local@",
+        "workerVersion": {
+          "buildId": "0d7767616bf364b6e66830129586c79c"
+        },
+        "sdkMetadata": {},
+        "meteringMetadata": {}
+      }
+    },
+    {
+      "eventId": "11",
+      "eventTime": "2025-06-25T15:53:54.436517Z",
+      "eventType": "EVENT_TYPE_SIGNAL_EXTERNAL_WORKFLOW_EXECUTION_INITIATED",
+      "taskId": "1048834",
+      "signalExternalWorkflowExecutionInitiatedEventAttributes": {
+        "workflowTaskCompletedEventId": "10",
+        "namespace": "default",
+        "namespaceId": "566d51ff-d944-4578-9185-38d087f87526",
+        "workflowExecution": {
+          "workflowId": "Order:A3-1750866822147"
+        },
+        "signalName": "ShipmentStatusUpdated",
+        "input": {
+          "payloads": [
+            {
+              "metadata": {
+                "encoding": "anNvbi9wbGFpbg==",
+                "encodingDecoded": "json/plain"
+              },
+              "data": {
+                "shipmentID": "A3-1750866822147:3",
+                "status": "booked",
+                "updatedAt": "2025-06-25T15:53:54.425778Z"
+              }
+            }
+          ]
+        },
+        "control": "11",
+        "header": {}
+      }
+    },
+    {
+      "eventId": "12",
+      "eventTime": "2025-06-25T15:53:54.469515Z",
+      "eventType": "EVENT_TYPE_EXTERNAL_WORKFLOW_EXECUTION_SIGNALED",
+      "taskId": "1048852",
+      "externalWorkflowExecutionSignaledEventAttributes": {
+        "initiatedEventId": "11",
+        "namespace": "default",
+        "namespaceId": "566d51ff-d944-4578-9185-38d087f87526",
+        "workflowExecution": {
+          "workflowId": "Order:A3-1750866822147"
+        },
+        "control": "11"
+      }
+    },
+    {
+      "eventId": "13",
+      "eventTime": "2025-06-25T15:53:54.469521Z",
+      "eventType": "EVENT_TYPE_WORKFLOW_TASK_SCHEDULED",
+      "taskId": "1048853",
+      "workflowTaskScheduledEventAttributes": {
+        "taskQueue": {
+          "name": "Jeffs-MacBook-Pro.local:ce731fde-e6da-44ea-b1f1-68d451731a61",
+          "kind": "TASK_QUEUE_KIND_STICKY",
+          "normalName": "shipments"
+        },
+        "startToCloseTimeout": "10s",
+        "attempt": 1
+      }
+    },
+    {
+      "eventId": "14",
+      "eventTime": "2025-06-25T15:53:54.513406Z",
+      "eventType": "EVENT_TYPE_WORKFLOW_TASK_STARTED",
+      "taskId": "1048865",
+      "workflowTaskStartedEventAttributes": {
+        "scheduledEventId": "13",
+        "identity": "44724@Jeffs-MacBook-Pro.local@",
+        "requestId": "f2a76766-65d6-47e4-b99b-212e368f2d11",
+        "historySizeBytes": "2241",
+        "workerVersion": {
+          "buildId": "0d7767616bf364b6e66830129586c79c"
+        }
+      }
+    },
+    {
+      "eventId": "15",
+      "eventTime": "2025-06-25T15:53:54.530863Z",
+      "eventType": "EVENT_TYPE_WORKFLOW_TASK_COMPLETED",
+      "taskId": "1048876",
+      "workflowTaskCompletedEventAttributes": {
+        "scheduledEventId": "13",
+        "startedEventId": "14",
+        "identity": "44724@Jeffs-MacBook-Pro.local@",
+        "workerVersion": {
+          "buildId": "0d7767616bf364b6e66830129586c79c"
+        },
+        "sdkMetadata": {},
+        "meteringMetadata": {}
+      }
+    },
+    {
+      "eventId": "16",
+      "eventTime": "2025-06-25T15:53:54.530888Z",
+      "eventType": "EVENT_TYPE_MARKER_RECORDED",
+      "taskId": "1048877",
+      "markerRecordedEventAttributes": {
+        "markerName": "LocalActivity",
+        "details": {
+          "data": {
+            "payloads": [
+              {
+                "metadata": {
+                  "encoding": "anNvbi9wbGFpbg==",
+                  "encodingDecoded": "json/plain"
+                },
+                "data": {
+                  "ActivityID": "1",
+                  "ActivityType": "UpdateShipmentStatus",
+                  "ReplayTime": "2025-06-25T15:53:54.518309028Z",
+                  "Attempt": 1,
+                  "Backoff": 0
+                }
+              }
+            ]
+          }
+        },
+        "workflowTaskCompletedEventId": "15"
+      }
+    },
+    {
+      "eventId": "17",
+      "eventTime": "2025-06-25T15:55:21.968582Z",
+      "eventType": "EVENT_TYPE_WORKFLOW_EXECUTION_SIGNALED",
+      "taskId": "1048882",
+      "workflowExecutionSignaledEventAttributes": {
+        "signalName": "ShipmentCarrierUpdate",
+        "input": {
+          "payloads": [
+            {
+              "metadata": {
+                "encoding": "anNvbi9wbGFpbg==",
+                "encodingDecoded": "json/plain"
+              },
+              "data": {
+                "status": "dispatched"
+              }
+            }
+          ]
+        },
+        "identity": "46951@Jeffs-MacBook-Pro.local@",
+        "header": {}
+      }
+    },
+    {
+      "eventId": "18",
+      "eventTime": "2025-06-25T15:55:21.968586Z",
+      "eventType": "EVENT_TYPE_WORKFLOW_TASK_SCHEDULED",
+      "taskId": "1048883",
+      "workflowTaskScheduledEventAttributes": {
+        "taskQueue": {
+          "name": "Jeffs-MacBook-Pro.local:ce731fde-e6da-44ea-b1f1-68d451731a61",
+          "kind": "TASK_QUEUE_KIND_STICKY",
+          "normalName": "shipments"
+        },
+        "startToCloseTimeout": "10s",
+        "attempt": 1
+      }
+    },
+    {
+      "eventId": "19",
+      "eventTime": "2025-06-25T15:55:22.080827Z",
+      "eventType": "EVENT_TYPE_WORKFLOW_TASK_STARTED",
+      "taskId": "1048887",
+      "workflowTaskStartedEventAttributes": {
+        "scheduledEventId": "18",
+        "identity": "44724@Jeffs-MacBook-Pro.local@",
+        "requestId": "31f4df16-ef97-43d9-aca2-9316f8cba91d",
+        "historySizeBytes": "2941",
+        "workerVersion": {
+          "buildId": "0d7767616bf364b6e66830129586c79c"
+        }
+      }
+    },
+    {
+      "eventId": "20",
+      "eventTime": "2025-06-25T15:55:22.091282Z",
+      "eventType": "EVENT_TYPE_WORKFLOW_TASK_COMPLETED",
+      "taskId": "1048891",
+      "workflowTaskCompletedEventAttributes": {
+        "scheduledEventId": "18",
+        "startedEventId": "19",
+        "identity": "44724@Jeffs-MacBook-Pro.local@",
+        "workerVersion": {
+          "buildId": "0d7767616bf364b6e66830129586c79c"
+        },
+        "sdkMetadata": {},
+        "meteringMetadata": {}
+      }
+    },
+    {
+      "eventId": "21",
+      "eventTime": "2025-06-25T15:55:22.091342Z",
+      "eventType": "EVENT_TYPE_SIGNAL_EXTERNAL_WORKFLOW_EXECUTION_INITIATED",
+      "taskId": "1048892",
+      "signalExternalWorkflowExecutionInitiatedEventAttributes": {
+        "workflowTaskCompletedEventId": "20",
+        "namespace": "default",
+        "namespaceId": "566d51ff-d944-4578-9185-38d087f87526",
+        "workflowExecution": {
+          "workflowId": "Order:A3-1750866822147"
+        },
+        "signalName": "ShipmentStatusUpdated",
+        "input": {
+          "payloads": [
+            {
+              "metadata": {
+                "encoding": "anNvbi9wbGFpbg==",
+                "encodingDecoded": "json/plain"
+              },
+              "data": {
+                "shipmentID": "A3-1750866822147:3",
+                "status": "dispatched",
+                "updatedAt": "2025-06-25T15:55:22.080827Z"
+              }
+            }
+          ]
+        },
+        "control": "21",
+        "header": {}
+      }
+    },
+    {
+      "eventId": "22",
+      "eventTime": "2025-06-25T15:55:22.101471Z",
+      "eventType": "EVENT_TYPE_EXTERNAL_WORKFLOW_EXECUTION_SIGNALED",
+      "taskId": "1048900",
+      "externalWorkflowExecutionSignaledEventAttributes": {
+        "initiatedEventId": "21",
+        "namespace": "default",
+        "namespaceId": "566d51ff-d944-4578-9185-38d087f87526",
+        "workflowExecution": {
+          "workflowId": "Order:A3-1750866822147"
+        },
+        "control": "21"
+      }
+    },
+    {
+      "eventId": "23",
+      "eventTime": "2025-06-25T15:55:22.101478Z",
+      "eventType": "EVENT_TYPE_WORKFLOW_TASK_SCHEDULED",
+      "taskId": "1048901",
+      "workflowTaskScheduledEventAttributes": {
+        "taskQueue": {
+          "name": "Jeffs-MacBook-Pro.local:ce731fde-e6da-44ea-b1f1-68d451731a61",
+          "kind": "TASK_QUEUE_KIND_STICKY",
+          "normalName": "shipments"
+        },
+        "startToCloseTimeout": "10s",
+        "attempt": 1
+      }
+    },
+    {
+      "eventId": "24",
+      "eventTime": "2025-06-25T15:55:22.105649Z",
+      "eventType": "EVENT_TYPE_WORKFLOW_TASK_STARTED",
+      "taskId": "1048908",
+      "workflowTaskStartedEventAttributes": {
+        "scheduledEventId": "23",
+        "identity": "44724@Jeffs-MacBook-Pro.local@",
+        "requestId": "04bc282c-0eda-4312-9e9c-7a816e273fc3",
+        "historySizeBytes": "3653",
+        "workerVersion": {
+          "buildId": "0d7767616bf364b6e66830129586c79c"
+        }
+      }
+    },
+    {
+      "eventId": "25",
+      "eventTime": "2025-06-25T15:55:22.117159Z",
+      "eventType": "EVENT_TYPE_WORKFLOW_TASK_COMPLETED",
+      "taskId": "1048915",
+      "workflowTaskCompletedEventAttributes": {
+        "scheduledEventId": "23",
+        "startedEventId": "24",
+        "identity": "44724@Jeffs-MacBook-Pro.local@",
+        "workerVersion": {
+          "buildId": "0d7767616bf364b6e66830129586c79c"
+        },
+        "sdkMetadata": {},
+        "meteringMetadata": {}
+      }
+    },
+    {
+      "eventId": "26",
+      "eventTime": "2025-06-25T15:55:22.117233Z",
+      "eventType": "EVENT_TYPE_MARKER_RECORDED",
+      "taskId": "1048916",
+      "markerRecordedEventAttributes": {
+        "markerName": "LocalActivity",
+        "details": {
+          "data": {
+            "payloads": [
+              {
+                "metadata": {
+                  "encoding": "anNvbi9wbGFpbg==",
+                  "encodingDecoded": "json/plain"
+                },
+                "data": {
+                  "ActivityID": "2",
+                  "ActivityType": "UpdateShipmentStatus",
+                  "ReplayTime": "2025-06-25T15:55:22.108096624Z",
+                  "Attempt": 1,
+                  "Backoff": 0
+                }
+              }
+            ]
+          }
+        },
+        "workflowTaskCompletedEventId": "25"
+      }
+    },
+    {
+      "eventId": "27",
+      "eventTime": "2025-06-25T15:55:25.078824Z",
+      "eventType": "EVENT_TYPE_WORKFLOW_EXECUTION_SIGNALED",
+      "taskId": "1048918",
+      "workflowExecutionSignaledEventAttributes": {
+        "signalName": "ShipmentCarrierUpdate",
+        "input": {
+          "payloads": [
+            {
+              "metadata": {
+                "encoding": "anNvbi9wbGFpbg==",
+                "encodingDecoded": "json/plain"
+              },
+              "data": {
+                "status": "delivered"
+              }
+            }
+          ]
+        },
+        "identity": "46951@Jeffs-MacBook-Pro.local@",
+        "header": {}
+      }
+    },
+    {
+      "eventId": "28",
+      "eventTime": "2025-06-25T15:55:25.078828Z",
+      "eventType": "EVENT_TYPE_WORKFLOW_TASK_SCHEDULED",
+      "taskId": "1048919",
+      "workflowTaskScheduledEventAttributes": {
+        "taskQueue": {
+          "name": "Jeffs-MacBook-Pro.local:ce731fde-e6da-44ea-b1f1-68d451731a61",
+          "kind": "TASK_QUEUE_KIND_STICKY",
+          "normalName": "shipments"
+        },
+        "startToCloseTimeout": "10s",
+        "attempt": 1
+      }
+    },
+    {
+      "eventId": "29",
+      "eventTime": "2025-06-25T15:55:25.082974Z",
+      "eventType": "EVENT_TYPE_WORKFLOW_TASK_STARTED",
+      "taskId": "1048923",
+      "workflowTaskStartedEventAttributes": {
+        "scheduledEventId": "28",
+        "identity": "44724@Jeffs-MacBook-Pro.local@",
+        "requestId": "bf5e46b8-eeaa-4a82-a819-ab53262036d0",
+        "historySizeBytes": "4347",
+        "workerVersion": {
+          "buildId": "0d7767616bf364b6e66830129586c79c"
+        }
+      }
+    },
+    {
+      "eventId": "30",
+      "eventTime": "2025-06-25T15:55:25.089113Z",
+      "eventType": "EVENT_TYPE_WORKFLOW_TASK_COMPLETED",
+      "taskId": "1048927",
+      "workflowTaskCompletedEventAttributes": {
+        "scheduledEventId": "28",
+        "startedEventId": "29",
+        "identity": "44724@Jeffs-MacBook-Pro.local@",
+        "workerVersion": {
+          "buildId": "0d7767616bf364b6e66830129586c79c"
+        },
+        "sdkMetadata": {},
+        "meteringMetadata": {}
+      }
+    },
+    {
+      "eventId": "31",
+      "eventTime": "2025-06-25T15:55:25.089154Z",
+      "eventType": "EVENT_TYPE_SIGNAL_EXTERNAL_WORKFLOW_EXECUTION_INITIATED",
+      "taskId": "1048928",
+      "signalExternalWorkflowExecutionInitiatedEventAttributes": {
+        "workflowTaskCompletedEventId": "30",
+        "namespace": "default",
+        "namespaceId": "566d51ff-d944-4578-9185-38d087f87526",
+        "workflowExecution": {
+          "workflowId": "Order:A3-1750866822147"
+        },
+        "signalName": "ShipmentStatusUpdated",
+        "input": {
+          "payloads": [
+            {
+              "metadata": {
+                "encoding": "anNvbi9wbGFpbg==",
+                "encodingDecoded": "json/plain"
+              },
+              "data": {
+                "shipmentID": "A3-1750866822147:3",
+                "status": "delivered",
+                "updatedAt": "2025-06-25T15:55:25.082974Z"
+              }
+            }
+          ]
+        },
+        "control": "31",
+        "header": {}
+      }
+    },
+    {
+      "eventId": "32",
+      "eventTime": "2025-06-25T15:55:25.097235Z",
+      "eventType": "EVENT_TYPE_EXTERNAL_WORKFLOW_EXECUTION_SIGNALED",
+      "taskId": "1048936",
+      "externalWorkflowExecutionSignaledEventAttributes": {
+        "initiatedEventId": "31",
+        "namespace": "default",
+        "namespaceId": "566d51ff-d944-4578-9185-38d087f87526",
+        "workflowExecution": {
+          "workflowId": "Order:A3-1750866822147"
+        },
+        "control": "31"
+      }
+    },
+    {
+      "eventId": "33",
+      "eventTime": "2025-06-25T15:55:25.097241Z",
+      "eventType": "EVENT_TYPE_WORKFLOW_TASK_SCHEDULED",
+      "taskId": "1048937",
+      "workflowTaskScheduledEventAttributes": {
+        "taskQueue": {
+          "name": "Jeffs-MacBook-Pro.local:ce731fde-e6da-44ea-b1f1-68d451731a61",
+          "kind": "TASK_QUEUE_KIND_STICKY",
+          "normalName": "shipments"
+        },
+        "startToCloseTimeout": "10s",
+        "attempt": 1
+      }
+    },
+    {
+      "eventId": "34",
+      "eventTime": "2025-06-25T15:55:25.102204Z",
+      "eventType": "EVENT_TYPE_WORKFLOW_TASK_STARTED",
+      "taskId": "1048944",
+      "workflowTaskStartedEventAttributes": {
+        "scheduledEventId": "33",
+        "identity": "44724@Jeffs-MacBook-Pro.local@",
+        "requestId": "88a1e03b-6af7-448b-8a2f-77e7f8257ae2",
+        "historySizeBytes": "5058",
+        "workerVersion": {
+          "buildId": "0d7767616bf364b6e66830129586c79c"
+        }
+      }
+    },
+    {
+      "eventId": "35",
+      "eventTime": "2025-06-25T15:55:25.113863Z",
+      "eventType": "EVENT_TYPE_WORKFLOW_TASK_COMPLETED",
+      "taskId": "1048951",
+      "workflowTaskCompletedEventAttributes": {
+        "scheduledEventId": "33",
+        "startedEventId": "34",
+        "identity": "44724@Jeffs-MacBook-Pro.local@",
+        "workerVersion": {
+          "buildId": "0d7767616bf364b6e66830129586c79c"
+        },
+        "sdkMetadata": {},
+        "meteringMetadata": {}
+      }
+    },
+    {
+      "eventId": "36",
+      "eventTime": "2025-06-25T15:55:25.113890Z",
+      "eventType": "EVENT_TYPE_MARKER_RECORDED",
+      "taskId": "1048952",
+      "markerRecordedEventAttributes": {
+        "markerName": "LocalActivity",
+        "details": {
+          "data": {
+            "payloads": [
+              {
+                "metadata": {
+                  "encoding": "anNvbi9wbGFpbg==",
+                  "encodingDecoded": "json/plain"
+                },
+                "data": {
+                  "ActivityID": "3",
+                  "ActivityType": "UpdateShipmentStatus",
+                  "ReplayTime": "2025-06-25T15:55:25.104404517Z",
+                  "Attempt": 1,
+                  "Backoff": 0
+                }
+              }
+            ]
+          }
+        },
+        "workflowTaskCompletedEventId": "35"
+      }
+    },
+    {
+      "eventId": "37",
+      "eventTime": "2025-06-25T15:55:25.113897Z",
+      "eventType": "EVENT_TYPE_WORKFLOW_EXECUTION_COMPLETED",
+      "taskId": "1048953",
+      "workflowExecutionCompletedEventAttributes": {
+        "result": {
+          "payloads": [
+            {
+              "metadata": {
+                "encoding": "anNvbi9wbGFpbg==",
+                "encodingDecoded": "json/plain"
+              },
+              "data": {
+                "CourierReference": "A3-1750866822147:3:1234"
+              }
+            }
+          ]
+        },
+        "workflowTaskCompletedEventId": "35"
+      }
+    }
+  ]
+}

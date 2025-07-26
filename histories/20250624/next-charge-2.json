@@ -1,0 +1,410 @@
+{
+  "events": [
+    {
+      "eventId": "1",
+      "eventTime": "2025-06-25T17:03:15.781382Z",
+      "eventType": "EVENT_TYPE_WORKFLOW_EXECUTION_STARTED",
+      "taskId": "1048751",
+      "workflowExecutionStartedEventAttributes": {
+        "workflowType": {
+          "name": "charge"
+        },
+        "parentWorkflowNamespace": "default",
+        "parentWorkflowNamespaceId": "95959125-5623-47ca-8dcd-a00dd2634fb6",
+        "parentWorkflowExecution": {
+          "workflowId": "fulfill-A2-1750870980559:2",
+          "runId": "b0796247-61b0-4b95-8c29-b2686a8fab48"
+        },
+        "parentInitiatedEventId": "5",
+        "taskQueue": {
+          "name": "billing",
+          "kind": "TASK_QUEUE_KIND_NORMAL"
+        },
+        "input": {
+          "payloads": [
+            {
+              "metadata": {
+                "encoding": "anNvbi9wbGFpbg==",
+                "encodingDecoded": "json/plain"
+              },
+              "data": {
+                "customerId": "1234",
+                "reference": "a0319a5e-fb9a-42d4-a533-ca287fa0b716",
+                "items": [
+                  {
+                    "sku": "Puma Suede Classic",
+                    "quantity": 3
+                  }
+                ],
+                "idempotencyKey": "a0319a5e-fb9a-42d4-a533-ca287fa0b716"
+              }
+            }
+          ]
+        },
+        "workflowExecutionTimeout": "7200s",
+        "workflowRunTimeout": "7200s",
+        "workflowTaskTimeout": "120s",
+        "originalExecutionRunId": "d628d97d-2b08-4c0a-9bc5-eb8c3f0be90a",
+        "firstExecutionRunId": "d628d97d-2b08-4c0a-9bc5-eb8c3f0be90a",
+        "attempt": 1,
+        "workflowExecutionExpirationTime": "2025-06-25T19:03:15.781Z",
+        "firstWorkflowTaskBackoff": "0s",
+        "memo": {},
+        "searchAttributes": {},
+        "header": {},
+        "workflowId": "charge-fulfill-A2-1750870980559:2-a0319a5e-fb9a-42d4-a533-ca287fa0b716",
+        "rootWorkflowExecution": {
+          "workflowId": "A2-1750870980559",
+          "runId": "b842d27c-8617-42e7-a800-5d804c8664de"
+        }
+      }
+    },
+    {
+      "eventId": "2",
+      "eventTime": "2025-06-25T17:03:15.811229Z",
+      "eventType": "EVENT_TYPE_WORKFLOW_TASK_SCHEDULED",
+      "taskId": "1048766",
+      "workflowTaskScheduledEventAttributes": {
+        "taskQueue": {
+          "name": "billing",
+          "kind": "TASK_QUEUE_KIND_NORMAL"
+        },
+        "startToCloseTimeout": "120s",
+        "attempt": 1
+      }
+    },
+    {
+      "eventId": "3",
+      "eventTime": "2025-06-25T17:03:15.828746Z",
+      "eventType": "EVENT_TYPE_WORKFLOW_TASK_STARTED",
+      "taskId": "1048773",
+      "workflowTaskStartedEventAttributes": {
+        "scheduledEventId": "2",
+        "identity": "8119@Jeffs-MacBook-Pro.local",
+        "requestId": "5e561c84-b3af-4ea1-ada2-3cc771e2b9bf",
+        "historySizeBytes": "680",
+        "workerVersion": {
+          "buildId": "@temporalio/worker@1.11.7+f0b61198cf514a03d17d1241fe93be87b0f9f34a5a181967de5e10f16dd5e64f"
+        }
+      }
+    },
+    {
+      "eventId": "4",
+      "eventTime": "2025-06-25T17:03:15.917633Z",
+      "eventType": "EVENT_TYPE_WORKFLOW_TASK_COMPLETED",
+      "taskId": "1048786",
+      "workflowTaskCompletedEventAttributes": {
+        "scheduledEventId": "2",
+        "startedEventId": "3",
+        "identity": "8119@Jeffs-MacBook-Pro.local",
+        "workerVersion": {
+          "buildId": "@temporalio/worker@1.11.7+f0b61198cf514a03d17d1241fe93be87b0f9f34a5a181967de5e10f16dd5e64f"
+        },
+        "sdkMetadata": {
+          "coreUsedFlags": [
+            2,
+            1,
+            3
+          ]
+        },
+        "meteringMetadata": {}
+      }
+    },
+    {
+      "eventId": "5",
+      "eventTime": "2025-06-25T17:03:15.917674Z",
+      "eventType": "EVENT_TYPE_ACTIVITY_TASK_SCHEDULED",
+      "taskId": "1048787",
+      "activityTaskScheduledEventAttributes": {
+        "activityId": "1",
+        "activityType": {
+          "name": "generateInvoice"
+        },
+        "taskQueue": {
+          "name": "billing",
+          "kind": "TASK_QUEUE_KIND_NORMAL"
+        },
+        "header": {},
+        "input": {
+          "payloads": [
+            {
+              "metadata": {
+                "encoding": "anNvbi9wbGFpbg==",
+                "encodingDecoded": "json/plain"
+              },
+              "data": {
+                "customerId": "1234",
+                "reference": "a0319a5e-fb9a-42d4-a533-ca287fa0b716",
+                "items": [
+                  {
+                    "sku": "Puma Suede Classic",
+                    "quantity": 3
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "scheduleToCloseTimeout": "7200s",
+        "scheduleToStartTimeout": "7200s",
+        "startToCloseTimeout": "7200s",
+        "heartbeatTimeout": "0s",
+        "workflowTaskCompletedEventId": "4",
+        "retryPolicy": {
+          "initialInterval": "60s",
+          "backoffCoefficient": 2,
+          "maximumInterval": "960s",
+          "maximumAttempts": 500
+        },
+        "useWorkflowBuildId": true
+      }
+    },
+    {
+      "eventId": "6",
+      "eventTime": "2025-06-25T17:03:15.933942Z",
+      "eventType": "EVENT_TYPE_ACTIVITY_TASK_STARTED",
+      "taskId": "1048799",
+      "activityTaskStartedEventAttributes": {
+        "scheduledEventId": "5",
+        "identity": "8119@Jeffs-MacBook-Pro.local",
+        "requestId": "b1510aff-c5c1-4fc3-adb6-1f9ca8e9e459",
+        "attempt": 1,
+        "workerVersion": {
+          "buildId": "@temporalio/worker@1.11.7+f0b61198cf514a03d17d1241fe93be87b0f9f34a5a181967de5e10f16dd5e64f"
+        }
+      }
+    },
+    {
+      "eventId": "7",
+      "eventTime": "2025-06-25T17:03:15.953162Z",
+      "eventType": "EVENT_TYPE_ACTIVITY_TASK_COMPLETED",
+      "taskId": "1048800",
+      "activityTaskCompletedEventAttributes": {
+        "result": {
+          "payloads": [
+            {
+              "metadata": {
+                "encoding": "anNvbi9wbGFpbg==",
+                "encodingDecoded": "json/plain"
+              },
+              "data": {
+                "invoiceReference": "a0319a5e-fb9a-42d4-a533-ca287fa0b716",
+                "subTotal": 28716,
+                "shipping": 1503,
+                "tax": 5743,
+                "total": 34459
+              }
+            }
+          ]
+        },
+        "scheduledEventId": "5",
+        "startedEventId": "6",
+        "identity": "8119@Jeffs-MacBook-Pro.local"
+      }
+    },
+    {
+      "eventId": "8",
+      "eventTime": "2025-06-25T17:03:15.953168Z",
+      "eventType": "EVENT_TYPE_WORKFLOW_TASK_SCHEDULED",
+      "taskId": "1048801",
+      "workflowTaskScheduledEventAttributes": {
+        "taskQueue": {
+          "name": "8119@Jeffs-MacBook-Pro.local-62b12f279f014d5788fd242580b74a9f",
+          "kind": "TASK_QUEUE_KIND_STICKY",
+          "normalName": "billing"
+        },
+        "startToCloseTimeout": "120s",
+        "attempt": 1
+      }
+    },
+    {
+      "eventId": "9",
+      "eventTime": "2025-06-25T17:03:15.961842Z",
+      "eventType": "EVENT_TYPE_WORKFLOW_TASK_STARTED",
+      "taskId": "1048808",
+      "workflowTaskStartedEventAttributes": {
+        "scheduledEventId": "8",
+        "identity": "8119@Jeffs-MacBook-Pro.local",
+        "requestId": "3c7cfccf-0ed5-4ded-8c1b-65ba879056f8",
+        "historySizeBytes": "1820",
+        "workerVersion": {
+          "buildId": "@temporalio/worker@1.11.7+f0b61198cf514a03d17d1241fe93be87b0f9f34a5a181967de5e10f16dd5e64f"
+        }
+      }
+    },
+    {
+      "eventId": "10",
+      "eventTime": "2025-06-25T17:03:15.990986Z",
+      "eventType": "EVENT_TYPE_WORKFLOW_TASK_COMPLETED",
+      "taskId": "1048817",
+      "workflowTaskCompletedEventAttributes": {
+        "scheduledEventId": "8",
+        "startedEventId": "9",
+        "identity": "8119@Jeffs-MacBook-Pro.local",
+        "workerVersion": {
+          "buildId": "@temporalio/worker@1.11.7+f0b61198cf514a03d17d1241fe93be87b0f9f34a5a181967de5e10f16dd5e64f"
+        },
+        "sdkMetadata": {},
+        "meteringMetadata": {}
+      }
+    },
+    {
+      "eventId": "11",
+      "eventTime": "2025-06-25T17:03:15.991013Z",
+      "eventType": "EVENT_TYPE_ACTIVITY_TASK_SCHEDULED",
+      "taskId": "1048818",
+      "activityTaskScheduledEventAttributes": {
+        "activityId": "2",
+        "activityType": {
+          "name": "chargeCustomer"
+        },
+        "taskQueue": {
+          "name": "billing",
+          "kind": "TASK_QUEUE_KIND_NORMAL"
+        },
+        "header": {},
+        "input": {
+          "payloads": [
+            {
+              "metadata": {
+                "encoding": "anNvbi9wbGFpbg==",
+                "encodingDecoded": "json/plain"
+              },
+              "data": {
+                "customerId": "1234",
+                "reference": "a0319a5e-fb9a-42d4-a533-ca287fa0b716",
+                "charge": 34459
+              }
+            }
+          ]
+        },
+        "scheduleToCloseTimeout": "7200s",
+        "scheduleToStartTimeout": "7200s",
+        "startToCloseTimeout": "7200s",
+        "heartbeatTimeout": "0s",
+        "workflowTaskCompletedEventId": "10",
+        "retryPolicy": {
+          "initialInterval": "60s",
+          "backoffCoefficient": 2,
+          "maximumInterval": "960s",
+          "maximumAttempts": 500
+        },
+        "useWorkflowBuildId": true
+      }
+    },
+    {
+      "eventId": "12",
+      "eventTime": "2025-06-25T17:03:15.999935Z",
+      "eventType": "EVENT_TYPE_ACTIVITY_TASK_STARTED",
+      "taskId": "1048829",
+      "activityTaskStartedEventAttributes": {
+        "scheduledEventId": "11",
+        "identity": "8119@Jeffs-MacBook-Pro.local",
+        "requestId": "d8d4f413-ae21-4322-b1df-bc672b1980ff",
+        "attempt": 1,
+        "workerVersion": {
+          "buildId": "@temporalio/worker@1.11.7+f0b61198cf514a03d17d1241fe93be87b0f9f34a5a181967de5e10f16dd5e64f"
+        }
+      }
+    },
+    {
+      "eventId": "13",
+      "eventTime": "2025-06-25T17:03:16.009593Z",
+      "eventType": "EVENT_TYPE_ACTIVITY_TASK_COMPLETED",
+      "taskId": "1048830",
+      "activityTaskCompletedEventAttributes": {
+        "result": {
+          "payloads": [
+            {
+              "metadata": {
+                "encoding": "anNvbi9wbGFpbg==",
+                "encodingDecoded": "json/plain"
+              },
+              "data": {
+                "success": true,
+                "authCode": "123456789"
+              }
+            }
+          ]
+        },
+        "scheduledEventId": "11",
+        "startedEventId": "12",
+        "identity": "8119@Jeffs-MacBook-Pro.local"
+      }
+    },
+    {
+      "eventId": "14",
+      "eventTime": "2025-06-25T17:03:16.009600Z",
+      "eventType": "EVENT_TYPE_WORKFLOW_TASK_SCHEDULED",
+      "taskId": "1048831",
+      "workflowTaskScheduledEventAttributes": {
+        "taskQueue": {
+          "name": "8119@Jeffs-MacBook-Pro.local-62b12f279f014d5788fd242580b74a9f",
+          "kind": "TASK_QUEUE_KIND_STICKY",
+          "normalName": "billing"
+        },
+        "startToCloseTimeout": "120s",
+        "attempt": 1
+      }
+    },
+    {
+      "eventId": "15",
+      "eventTime": "2025-06-25T17:03:16.017379Z",
+      "eventType": "EVENT_TYPE_WORKFLOW_TASK_STARTED",
+      "taskId": "1048838",
+      "workflowTaskStartedEventAttributes": {
+        "scheduledEventId": "14",
+        "identity": "8119@Jeffs-MacBook-Pro.local",
+        "requestId": "2bd7d282-93ff-4b00-a8e8-721472df29c5",
+        "historySizeBytes": "2831",
+        "workerVersion": {
+          "buildId": "@temporalio/worker@1.11.7+f0b61198cf514a03d17d1241fe93be87b0f9f34a5a181967de5e10f16dd5e64f"
+        }
+      }
+    },
+    {
+      "eventId": "16",
+      "eventTime": "2025-06-25T17:03:16.036671Z",
+      "eventType": "EVENT_TYPE_WORKFLOW_TASK_COMPLETED",
+      "taskId": "1048849",
+      "workflowTaskCompletedEventAttributes": {
+        "scheduledEventId": "14",
+        "startedEventId": "15",
+        "identity": "8119@Jeffs-MacBook-Pro.local",
+        "workerVersion": {
+          "buildId": "@temporalio/worker@1.11.7+f0b61198cf514a03d17d1241fe93be87b0f9f34a5a181967de5e10f16dd5e64f"
+        },
+        "sdkMetadata": {},
+        "meteringMetadata": {}
+      }
+    },
+    {
+      "eventId": "17",
+      "eventTime": "2025-06-25T17:03:16.036700Z",
+      "eventType": "EVENT_TYPE_WORKFLOW_EXECUTION_COMPLETED",
+      "taskId": "1048850",
+      "workflowExecutionCompletedEventAttributes": {
+        "result": {
+          "payloads": [
+            {
+              "metadata": {
+                "encoding": "anNvbi9wbGFpbg==",
+                "encodingDecoded": "json/plain"
+              },
+              "data": {
+                "invoiceReference": "a0319a5e-fb9a-42d4-a533-ca287fa0b716",
+                "subTotal": 28716,
+                "shipping": 1503,
+                "tax": 5743,
+                "total": 34459,
+                "success": true,
+                "authCode": "123456789"
+              }
+            }
+          ]
+        },
+        "workflowTaskCompletedEventId": "16"
+      }
+    }
+  ]
+}
