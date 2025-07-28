@@ -1,5 +1,6 @@
 import { log } from '@temporalio/activity';
-import { db } from '@vercel/postgres';
+import { sql } from '../db/client.js';
+
 import {
   OrderItem,
   OrderStatus,
@@ -73,15 +74,15 @@ export async function reserveItems(input: ReserveItemsInput): Promise<ReserveIte
 
 export async function fetchOrders(): Promise<OrderContext[]> {
   const result =
-    await db.sql`SELECT id, customer_id, status, received_at FROM orders ORDER BY received_at DESC`;
-  return result.rows as OrderContext[];
+    await sql`SELECT id, customer_id, status, received_at FROM orders ORDER BY received_at DESC`;
+  return result as OrderContext[];
 }
 
 export async function updateOrderStatusInDb(
   order: OrderContext,
   status: OrderStatus
 ): Promise<void> {
-  const result = await db.sql`
+  const result = await sql`
     INSERT INTO orders (id, customer_id, status, received_at)
     VALUES (${order.id}, ${order.customerId}, ${order.status}, ${new Date().toISOString()})
     ON CONFLICT(id) DO UPDATE SET status = ${status}`;

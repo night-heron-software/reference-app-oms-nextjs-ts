@@ -1,26 +1,24 @@
 'use server';
 import 'server-only';
-import { db } from '@vercel/postgres';
-
-const client = await db.connect();
+import { sql } from '@/temporal/src/db/client'; // Adjust the import path as necessary
 
 export async function setupTables() {
-  await client.sql`DROP TABLE IF EXISTS settings`;
-  await client.sql`DROP INDEX IF EXISTS orders_received_at`;
-  await client.sql`DROP TABLE IF EXISTS orders`;
+  await sql`DROP TABLE IF EXISTS settings`;
+  await sql`DROP INDEX IF EXISTS orders_received_at`;
+  await sql`DROP TABLE IF EXISTS orders`;
 
-  await client.sql`
+  await sql`
     CREATE TABLE IF NOT EXISTS settings (
       name VARCHAR(255) PRIMARY KEY NOT NULL,
       value JSONB NOT NULL
    )`;
 
-  await client.sql`
+  await sql`
     INSERT INTO settings (name, value)
     VALUES ('fraud', '{"limit": 100, "maintenanceMode": false}')
     ON CONFLICT (name) DO NOTHING`;
 
-  await client.sql`
+  await sql`
     CREATE TABLE IF NOT EXISTS orders (
       id VARCHAR(255) PRIMARY KEY  NOT NULL,
       customer_id VARCHAR(255) NOT NULL,
@@ -28,14 +26,14 @@ export async function setupTables() {
       status VARCHAR(255) NOT NULL
     )`;
 
-  await client.sql`
+  await sql`
     CREATE INDEX IF NOT EXISTS orders_received_at ON orders(received_at DESC)
     `;
 
-  await client.sql`DROP INDEX IF EXISTS shipments_booked_at`;
-  await client.sql`DROP TABLE IF EXISTS shipments`;
+  await sql`DROP INDEX IF EXISTS shipments_booked_at`;
+  await sql`DROP TABLE IF EXISTS shipments`;
 
-  await client.sql`
+  await sql`
   CREATE TABLE IF NOT EXISTS shipments (
     id VARCHAR(255) PRIMARY KEY,
     status VARCHAR(255) NOT NULL,
@@ -43,7 +41,7 @@ export async function setupTables() {
   )
   `;
 
-  await client.sql`
+  await sql`
   CREATE INDEX IF NOT EXISTS shipments_booked_at ON shipments (booked_at DESC)
   `;
 }
@@ -51,11 +49,11 @@ export async function setupTables() {
 export async function GET() {
   try {
     await setupTables();
-    await client.sql`BEGIN`;
-    await client.sql`COMMIT`;
+    await sql`BEGIN`;
+    await sql`COMMIT`;
     return Response.json({ message: 'Database setup successfully' });
   } catch (error) {
-    await client.sql`ROLLBACK`;
+    await sql`ROLLBACK`;
     return Response.json({ error }, { status: 500 });
   }
 }

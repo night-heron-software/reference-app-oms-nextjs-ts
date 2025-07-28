@@ -17,15 +17,19 @@ import {
   shipmentIdToWorkflowId
 } from '@/temporal/src/shipment/definitions';
 
-import { sql } from '@vercel/postgres';
+//import { neon } from '@neondatabase/serverless';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { getTemporalClient } from './client';
 
+import { sql } from '@/temporal/src/db/client'; // Adjust the import path as necessary
+
+//const sql = neon(process.env.POSTGRES_URL || 'postgres://default:');
+
 export async function fetchOrder(id: string): Promise<OrderQueryResult | undefined> {
   const result = await sql`SELECT id, customer_id, status FROM orders WHERE id = ${id}`;
-  if (result.rows.length > 0) {
-    return result.rows[0] as OrderQueryResult;
+  if (result.length > 0) {
+    return result[0] as OrderQueryResult;
   } else {
     console.error('Failed to fetch order');
     return undefined;
@@ -38,10 +42,10 @@ export interface FraudSettings {
 }
 
 export async function fetchFraudSettings(): Promise<FraudSettings> {
-  const result = await sql`SELECT value FROM settings WHERE name = 'fraud'`;
-  console.log(`fetchFraudSettings: ${JSON.stringify(result.rows, null, 2)}`);
+  const rows = await sql`SELECT value FROM settings WHERE name = 'fraud'`;
+  console.log(`fetchFraudSettings: ${JSON.stringify(rows, null, 2)}`);
   return (
-    (result.rows[0]?.value as FraudSettings) || {
+    (rows[0]?.value as FraudSettings) || {
       limit: 0,
       maintenanceMode: false
     }
@@ -49,8 +53,8 @@ export async function fetchFraudSettings(): Promise<FraudSettings> {
 }
 
 export async function fetchOrders(): Promise<OrderQueryResult[]> {
-  const result = await sql`SELECT id, status, received_at FROM orders ORDER BY received_at DESC`;
-  return result.rows as OrderQueryResult[];
+  const rows = await sql`SELECT id, status, received_at FROM orders ORDER BY received_at DESC`;
+  return rows as OrderQueryResult[];
 }
 
 export async function createOrder(formData: FormData): Promise<void> {
@@ -99,8 +103,8 @@ export async function createOrder(formData: FormData): Promise<void> {
 }
 
 export async function fetchShipments(): Promise<Shipment[]> {
-  const result = await sql`SELECT id, status FROM shipments ORDER BY booked_at DESC`;
-  return result.rows as Shipment[];
+  const rows = await sql`SELECT id, status FROM shipments ORDER BY booked_at DESC`;
+  return rows as Shipment[];
 }
 
 export async function fetchOrderById(id: string): Promise<OrderQueryResult | undefined> {
