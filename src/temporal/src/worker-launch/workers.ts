@@ -1,8 +1,7 @@
-import startOrderWorker from '../order/worker.js';
-import startBillingWorker from '../billing/worker.js';
-import startShipmentWorker from '../shipment/worker.js';
 import { NativeConnection } from '@temporalio/worker';
-import { start } from 'repl';
+import startBillingWorker from '../billing/worker.js';
+import startOrderWorker from '../order/worker.js';
+import startShipmentWorker from '../shipment/worker.js';
 
 async function run() {
   const connection = await NativeConnection.connect({

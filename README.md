@@ -1,36 +1,35 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
-## Getting Started
+## Running Locally
 
-First, run the development server:
+Make sure there isn't an existing PostgreSQL instance running on port 5234. Set up Neon PostgreSQL:
+
+```bash
+# from the project root directory:
+cd neon
+docker-compose up -d
+```
+
+Run the local temporal server:
+
+```bash
+temporal server start-dev
+# or, if you want a persistent database
+temporal server start-dev --db-filename local.db
+```
+
+Run Next.js and the Workers:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Or
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Open the project folder in VSCode and **Run => Start Debugging** or **Run => Run Without Debugging**.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Initialize the PostgreSQL database by going opening [http://localhost:3000/db](http://localhost:3000/db). This URL will also reset an existing database. You will need to stop temporal, remove the database file (local.db in the example) if you are using it, and start temporal again.
 
-## Learn More
+Go to [http://localhost:3000](http://localhost:3000) to use the app. Only the [Customer](http://localhost:3000/orders) and [Courier](http://localhost:3000/shipments) pages work properly at this point.
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+View Temporal information at [Temporal Dashboard (http://localhost:8233)](http://localhost:8233).
