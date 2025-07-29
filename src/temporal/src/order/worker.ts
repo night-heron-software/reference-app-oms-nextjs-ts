@@ -11,21 +11,27 @@ import { createRequire } from 'node:module';
 
 run().catch((err) => console.log(err));
 
+async function start(connection: NativeConnection): Promise<void> {
+  const require = createRequire(import.meta.url);
+  const worker = await Worker.create({
+    connection,
+    workflowsPath: require.resolve('./workflows'),
+    activities,
+    taskQueue: TASK_QUEUE_NAME
+  });
+  return worker.run();
+}
+
 async function run() {
   const connection = await NativeConnection.connect({
     address: 'localhost:7233'
     // In production, pass options to configure TLS and other settings.
   });
   try {
-    const require = createRequire(import.meta.url);
-    const worker = await Worker.create({
-      connection,
-      workflowsPath: require.resolve('./workflows'),
-      activities,
-      taskQueue: TASK_QUEUE_NAME
-    });
-    await worker.run();
+    await start(connection);
   } finally {
     connection.close();
   }
 }
+
+export default start;

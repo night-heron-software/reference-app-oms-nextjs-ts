@@ -4,16 +4,14 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "npm-run-all -l build:temporal --parallel dev:temporal dev:next start:order-worker start:billing-worker start:shipment-worker",
+    "dev": "npm-run-all -l build:temporal --parallel dev:temporal dev:next start:worker",
     "build": "npm-run-all -l build:temporal build:nextstart",
     "dev:next": "next dev",
     "dev:temporal": "tsc --build --watch ./src/temporal/tsconfig.json",
     "build:next": "next build",
     "build:temporal": "tsc --build ./src/temporal/tsconfig.json",
     "clean:temporal": "tsc --build --clean ./src/temporal/tsconfig.json",
-    "start:order-worker": "node  --watch --env-file=.env.local ./src/temporal/lib/order/worker",
-    "start:billing-worker": "node  --watch --env-file=.env.local ./src/temporal/lib/billing/worker",
-    "start:shipment-worker": "node  --watch --env-file=.env.local ./src/temporal/lib/shipment/worker",
+    "start:worker": "node  --watch --env-file=.env.local ./src/temporal/lib/worker/worker",
     "start:temporal": "temporal server start-dev --db-filename local.db",
     "start": "next start",
     "lint": "eslint ."

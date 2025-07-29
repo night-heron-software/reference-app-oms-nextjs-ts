@@ -1820,3 +1820,8 @@ export const sql = neon(connectionString);
 // - Better for high-frequency database operations
 export const pool = new Pool({ connectionString });
 #+end_src
+
+
+* [[https://docs.temporal.io/production-deployment/worker-deployments][Temporal Worker Deployments]]
+
+** [[https://docs.temporal.io/production-deployment/worker-deployments/deploy-workers-to-aws-eks][Quick Launch - Deploying your Workers on Amazon EKS]]
