@@ -364,8 +364,6 @@ npm-run-all -l build:temporal --parallel dev:temporal dev:next start:worker
   "npm_config_prefix": "/Users/jeffromine/.volta/tools/image/node/23.7.0",
   "npm_node_execpath": "/Users/jeffromine/.volta/tools/image/node/23.7.0/bin/node",
   "WATCH_REPORT_DEPENDENCIES": "1",
-  "DATABASE_URL": "postgres://default:LFrOHQ8iBRh9@ep-muddy-band-a4dr8n83-pooler.us-east-1.aws.neon.tech/verceldb?sslmode=require",
-  "DATABASE_URL_UNPOOLED": "postgresql://default:LFrOHQ8iBRh9@ep-muddy-band-a4dr8n83.us-east-1.aws.neon.tech/verceldb?sslmode=require",
   "PGDATABASE": "verceldb",
   "PGHOST": "ep-muddy-band-a4dr8n83-pooler.us-east-1.aws.neon.tech",
   "PGHOST_UNPOOLED": "ep-muddy-band-a4dr8n83.us-east-1.aws.neon.tech",
