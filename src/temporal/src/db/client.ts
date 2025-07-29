@@ -2,9 +2,9 @@ import { neon, neonConfig, Pool } from '@neondatabase/serverless';
 import ws from 'ws';
 
 let connectionString = process.env.DATABASE_URL || 'postgres://default:';
-
+console.log(`${JSON.stringify(process.env, null, 2)}`);
 // Configuring Neon for local development
-if (process.env.NODE_ENV === 'development') {
+if (process.env.USE_LOCAL_DATABASE === 'true') {
   connectionString = 'postgres://postgres:postgres@db.localtest.me:5432/main';
   neonConfig.fetchEndpoint = (host) => {
     const [protocol, port] = host === 'db.localtest.me' ? ['http', 4444] : ['https', 443];
