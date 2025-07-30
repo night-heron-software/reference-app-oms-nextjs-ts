@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import React from 'react';
-import { capitalize } from '@/lib/utils/formatting';
+import { capitalize } from '@/utils/formatting';
 import Logo from './OmsLogo'; // Adjust the import path as necessary
 
 interface BreadcrumbsProps {

@@ -1,7 +1,7 @@
 import React from 'react';
 // Assuming your utility function is available at this path in your Next.js project
 // Adjust the import path if your project structure is different.
-import { spaceBetweenCapitalLetters } from '@/lib/utils/formatting';
+import { spaceBetweenCapitalLetters } from '@/utils/formatting';
 
 interface StatusBadgeProps {
   status: string;

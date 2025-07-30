@@ -2,7 +2,7 @@
 
 import '@/app/ui/globals.css'; // Renamed from app.css for Next.js convention
 import Breadcrumbs from '@/components/Breadcrumbs'; // Assuming Next.js alias '@/' for 'src/'
-import { capitalize } from '@/lib/utils/formatting';
+import { capitalize } from '@/utils/formatting';
 import { usePathname } from 'next/navigation';
 import React, { useEffect } from 'react';
 
