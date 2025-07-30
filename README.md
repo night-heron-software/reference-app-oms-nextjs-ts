@@ -1,4 +1,5 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+This is a partial port of [OMS: A Temporal Reference Application for Order Management Systems
+](https://temporal.io/blog/oms-a-temporal-reference-application-for-order-management-systems) from Svelte and GO to TypeScript and Next.js.
 
 ## Running Locally
 
