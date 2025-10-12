@@ -28,9 +28,9 @@ cp example.env.local .env.local
 Run the local temporal server (installation instructions [here](https://learn.temporal.io/getting_started/typescript/dev_environment/?os=mac#set-up-a-local-temporal-service-for-development-with-temporal-cli) ):
 
 ```bash
-temporal server start-dev
+temporal server start-dev --dynamic-config-value frontend.enableUpdateWorkflowExecution=true
 # or, if you want a persistent database
-temporal server start-dev --db-filename local.db
+temporal server start-dev --db-filename local.db --dynamic-config-value frontend.enableUpdateWorkflowExecution=true
 ```
 
 Run Next.js and the Workers:
