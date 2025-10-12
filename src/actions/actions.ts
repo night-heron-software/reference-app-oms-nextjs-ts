@@ -13,7 +13,7 @@ import {
 import {
   ShipmentStatus,
   getShipmentStatus,
-  shipmentCarrierUpdateSignal,
+  shipmentCarrierUpdateShipmentStatus,
   shipmentIdToWorkflowId
 } from '@/temporal/src/shipment/definitions';
 
@@ -23,8 +23,6 @@ import { redirect } from 'next/navigation';
 import { getTemporalClient } from './client';
 
 import { sql } from '@/temporal/src/db/client'; // Adjust the import path as necessary
-
-//const sql = neon(process.env.POSTGRES_URL || 'postgres://default:');
 
 export async function fetchOrder(id: string): Promise<OrderQueryResult | undefined> {
   const result = await sql`SELECT id, customer_id, status FROM orders WHERE id = ${id}`;
@@ -131,7 +129,7 @@ export async function fetchShipmentById(id: string): Promise<ShipmentStatus | un
   for (let retry = 0; retry < 10; retry++) {
     try {
       // Attempt to fetch the shipment status
-      const shipmentStatus = await handle.query(getShipmentStatus);
+      const shipmentStatus = (await handle.query(getShipmentStatus)) as ShipmentStatus;
       console.log(`Fetched shipment: ${JSON.stringify(shipmentStatus, null, 2)}`);
       return shipmentStatus;
     } catch (error) {
@@ -143,9 +141,6 @@ export async function fetchShipmentById(id: string): Promise<ShipmentStatus | un
   console.warn(`Failed to fetch shipment by ID ${id} after retries.`);
   return undefined;
 }
-export interface ShipmentCarrierUpdateSignal {
-  status: string;
-}
 
 export async function updateShipmentCarrierStatus(
   shipmentId: string,
@@ -155,7 +150,10 @@ export async function updateShipmentCarrierStatus(
   const client = await getTemporalClient();
   const handle = client.workflow.getHandle(workflowId);
   try {
-    await handle.signal(shipmentCarrierUpdateSignal, { status: status });
+    let result = await handle.executeUpdate(shipmentCarrierUpdateShipmentStatus, {
+      args: [{ status: status }]
+    });
+    console.log(`Shipment carrier status update result: ${JSON.stringify(result, null, 2)}`);
   } catch (error) {
     console.warn(`Error updating shipment carrier status for ${shipmentId}:`, error);
   }

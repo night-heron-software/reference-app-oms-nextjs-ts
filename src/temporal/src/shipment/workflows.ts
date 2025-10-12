@@ -6,10 +6,11 @@ import * as activities from './activities.js'; // Ensure this path is correct an
 import {
   ShipInput,
   ShipOutput,
+  ShipmentCarrierUpdateShipmentStatus,
   ShipmentStatusUpdatedSignal,
   Status,
   getShipmentStatus,
-  shipmentCarrierUpdateSignal
+  shipmentCarrierUpdateShipmentStatus
 } from './definitions.js';
 export const ShipmentStatusUpdatedSignalName = 'ShipmentStatusUpdated';
 
@@ -65,12 +66,14 @@ export async function ship(input: ShipInput): Promise<ShipOutput> {
 
   await updateShipmentStatus(shipmentContext, 'booked');
 
-  wf.setHandler(shipmentCarrierUpdateSignal, async (parms) => {
-    const status = parms.status;
-    await updateShipmentStatus(shipmentContext, status as Status);
-
-    log.info(`Shipment status updated: ${status}`);
-  });
+  wf.setHandler(
+    shipmentCarrierUpdateShipmentStatus,
+    async (update: ShipmentCarrierUpdateShipmentStatus) => {
+      await updateShipmentStatus(shipmentContext, update.status as Status);
+      log.info(`Shipment status updated: ${update.status}`);
+      return update;
+    }
+  );
 
   await wf.condition(() => shipmentContext.status === 'delivered');
   await wf.condition(wf.allHandlersFinished);

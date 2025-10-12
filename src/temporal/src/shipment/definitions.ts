@@ -14,6 +14,9 @@ export const ShipmentCarrierUpdateSignalName = 'ShipmentCarrierUpdate';
 export interface ShipmentCarrierUpdateSignal {
   status: string;
 }
+export interface ShipmentCarrierUpdateShipmentStatus {
+  status: string;
+}
 
 // ShipmentStatusUpdatedSignal is used to notify the requestor of an update to a shipment's status.
 export interface ShipmentStatusUpdatedSignal {
@@ -90,5 +93,10 @@ export function workflowIdFromShipmentId(id: string): string {
 export const shipmentCarrierUpdateSignal = wf.defineSignal<[ShipmentCarrierUpdateSignal]>(
   'ShipmentCarrierUpdateSignalName'
 );
+
+export const shipmentCarrierUpdateShipmentStatus = wf.defineUpdate<
+  ShipmentCarrierUpdateShipmentStatus,
+  [ShipmentCarrierUpdateShipmentStatus]
+>('shipmentCarrierUpdateShipmentStatus');
 
 export const getShipmentStatus = wf.defineQuery<ShipmentStatus>('getShipmentStatus');
