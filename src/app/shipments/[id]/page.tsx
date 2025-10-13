@@ -2,7 +2,7 @@
 
 import React, { use, useEffect, useRef, useState } from 'react';
 
-import { fetchShipmentById, updateShipmentCarrierStatus } from '@/actions/actions';
+import { fetchShipmentById, executeShipmentStatusUpdate } from '@/actions/actions';
 import { ShipmentStatus } from '@/temporal/src/shipment/definitions';
 import Button from '@/components/Button';
 import Card from '@/components/Card';
@@ -46,12 +46,12 @@ export default function ShipmentDetailPage(props: ShipmentDetailPageProps) {
   }, []);
 
   const handleDispatchShipment = async () => {
-    await updateShipmentCarrierStatus(shipment.id, shipment.workflowId, 'dispatched');
+    await executeShipmentStatusUpdate(shipment.id, shipment.workflowId, 'dispatched');
     await refetchShipment();
   };
 
   const handleDeliverShipment = async () => {
-    await updateShipmentCarrierStatus(shipment.id, shipment.workflowId, 'delivered');
+    await executeShipmentStatusUpdate(shipment.id, shipment.workflowId, 'delivered');
     await refetchShipment();
   };
 

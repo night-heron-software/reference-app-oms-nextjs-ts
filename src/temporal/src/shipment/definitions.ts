@@ -7,18 +7,11 @@ export interface ShipmentItem {
 
 export type Status = 'pending' | 'booked' | 'dispatched' | 'delivered' | 'cancelled' | 'failed';
 
-// ShipmentCarrierUpdateSignalName is the name for a signal to update a shipment's status from the carrier.
-export const ShipmentCarrierUpdateSignalName = 'ShipmentCarrierUpdate';
-
-// ShipmentCarrierUpdateSignal is used by a carrier to update a shipment's status.
-export interface ShipmentCarrierUpdateSignal {
-  status: string;
-}
-export interface ShipmentCarrierUpdateShipmentStatus {
+export interface ShipmentCarrierShipmentStatusUpdate {
   status: string;
 }
 
-// ShipmentStatusUpdatedSignal is used to notify the requestor of an update to a shipment's status.
+// ShipmentStatusUpdatedSignal is used to notify the requesting workflow of an update to a shipment's status.
 export interface ShipmentStatusUpdatedSignal {
   shipmentId: string;
   status: string;
@@ -30,31 +23,13 @@ export interface ShipmentResult {
   courierReference: string;
 }
 
-export interface ShipmentImpl {
-  requestorWorkflowId: string;
-  id: string;
-  Items: ShipmentItem[];
-  status: string;
-  updatedAt: string;
-}
-
-// ShipmentStatusUpdate is used to update the status of a Shipment.
-export interface ShipmentStatusUpdate {
-  id: string;
-  status: Status;
-}
-
-// ShipmentStatsResult holds the stats for the Shipment system.
-export interface ShipmentStatsResult {
-  workerCount: number;
-  backlog: number;
-}
-// ShipmentInput is the input for a Shipment workflow.
+// ShipInput is the input for a Ship workflow.
 export interface ShipInput {
   requestorWorkflowId: string;
   id: string;
   items: ShipmentItem[];
 }
+// ShipOutput is the output of the Ship workflow.
 export interface ShipOutput {
   id: string;
   status: Status;
@@ -82,6 +57,7 @@ export interface BookShipmentInput {
 export interface BookShipmentResult {
   courierReference: string;
 }
+
 export function shipmentIdToWorkflowId(id: string): string {
   return 'Ship:' + id;
 }
@@ -90,13 +66,9 @@ export function workflowIdFromShipmentId(id: string): string {
   return id.replace(/^Ship:/, '');
 }
 
-export const shipmentCarrierUpdateSignal = wf.defineSignal<[ShipmentCarrierUpdateSignal]>(
-  'ShipmentCarrierUpdateSignalName'
-);
-
-export const shipmentCarrierUpdateShipmentStatus = wf.defineUpdate<
-  ShipmentCarrierUpdateShipmentStatus,
-  [ShipmentCarrierUpdateShipmentStatus]
->('shipmentCarrierUpdateShipmentStatus');
+export const shipmentCarrierShipmentStatusUpdate = wf.defineUpdate<
+  ShipmentCarrierShipmentStatusUpdate,
+  [ShipmentCarrierShipmentStatusUpdate]
+>('shipmentCarrierShipmentStatusUpdate');
 
 export const getShipmentStatus = wf.defineQuery<ShipmentStatus>('getShipmentStatus');

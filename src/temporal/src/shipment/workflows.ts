@@ -6,11 +6,11 @@ import * as activities from './activities.js'; // Ensure this path is correct an
 import {
   ShipInput,
   ShipOutput,
-  ShipmentCarrierUpdateShipmentStatus,
+  ShipmentCarrierShipmentStatusUpdate,
   ShipmentStatusUpdatedSignal,
   Status,
   getShipmentStatus,
-  shipmentCarrierUpdateShipmentStatus
+  shipmentCarrierShipmentStatusUpdate
 } from './definitions.js';
 export const ShipmentStatusUpdatedSignalName = 'ShipmentStatusUpdated';
 
@@ -48,6 +48,7 @@ export async function ship(input: ShipInput): Promise<ShipOutput> {
   };
 
   const workflowId = wf.workflowInfo().workflowId;
+
   wf.setHandler(getShipmentStatus, () => {
     log.info(`getShipmentStatus called for: ${shipmentContext.id}`);
     return {
@@ -67,8 +68,8 @@ export async function ship(input: ShipInput): Promise<ShipOutput> {
   await updateShipmentStatus(shipmentContext, 'booked');
 
   wf.setHandler(
-    shipmentCarrierUpdateShipmentStatus,
-    async (update: ShipmentCarrierUpdateShipmentStatus) => {
+    shipmentCarrierShipmentStatusUpdate,
+    async (update: ShipmentCarrierShipmentStatusUpdate) => {
       await updateShipmentStatus(shipmentContext, update.status as Status);
       log.info(`Shipment status updated: ${update.status}`);
       return update;

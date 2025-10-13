@@ -7,13 +7,14 @@ import {
   OrderQueryResult,
   Shipment,
   customerActionSignal,
+  customerActionUpdate,
   getOrderStatus,
   orderIdToWorkflowId
 } from '@/temporal/src/order/definitions';
 import {
   ShipmentStatus,
   getShipmentStatus,
-  shipmentCarrierUpdateShipmentStatus,
+  shipmentCarrierShipmentStatusUpdate,
   shipmentIdToWorkflowId
 } from '@/temporal/src/shipment/definitions';
 
@@ -142,7 +143,7 @@ export async function fetchShipmentById(id: string): Promise<ShipmentStatus | un
   return undefined;
 }
 
-export async function updateShipmentCarrierStatus(
+export async function executeShipmentStatusUpdate(
   shipmentId: string,
   workflowId: string,
   status: string
@@ -150,7 +151,7 @@ export async function updateShipmentCarrierStatus(
   const client = await getTemporalClient();
   const handle = client.workflow.getHandle(workflowId);
   try {
-    let result = await handle.executeUpdate(shipmentCarrierUpdateShipmentStatus, {
+    let result = await handle.executeUpdate(shipmentCarrierShipmentStatusUpdate, {
       args: [{ status: status }]
     });
     console.log(`Shipment carrier status update result: ${JSON.stringify(result, null, 2)}`);
@@ -158,8 +159,22 @@ export async function updateShipmentCarrierStatus(
     console.warn(`Error updating shipment carrier status for ${shipmentId}:`, error);
   }
 }
+export async function executeCustomerActionUpdate(
+  workflowId: string,
+  action: Action
+): Promise<void> {
+  const client = await getTemporalClient();
+  const handle = client.workflow.getHandle(workflowId);
 
-export async function sendCustomerActionSignal(workflowId: string, action: Action): Promise<void> {
+  try {
+    let result = await handle.executeUpdate(customerActionUpdate, { args: [action] });
+    console.log(`Customer action signal result: ${JSON.stringify(result, null, 2)}`);
+  } catch (error) {
+    console.warn(`Error sending customer action signal for workflow ${workflowId}:`, error);
+  }
+}
+
+/* export async function sendCustomerActionSignal(workflowId: string, action: Action): Promise<void> {
   const client = await getTemporalClient();
   const handle = client.workflow.getHandle(workflowId);
 
@@ -169,3 +184,4 @@ export async function sendCustomerActionSignal(workflowId: string, action: Actio
     console.warn(`Failed to send customer action signal`, error);
   }
 }
+ */

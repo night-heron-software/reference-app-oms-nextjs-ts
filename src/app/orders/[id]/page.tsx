@@ -1,6 +1,10 @@
 'use client';
 
-import { fetchOrderById, sendCustomerActionSignal } from '@/actions/actions'; // Adjust the import path as necessary
+import {
+  executeCustomerActionUpdate,
+  fetchOrderById,
+  sendCustomerActionSignal
+} from '@/actions/actions'; // Adjust the import path as necessary
 import { orderIdToWorkflowId, type OrderQueryResult } from '@/temporal/src/order/definitions';
 import { use, useEffect, useMemo, useState } from 'react';
 
@@ -54,7 +58,7 @@ export default function OrderPage(props: OrderPageProps) {
   const sendAction = async (action: Action) => {
     setActionLoading(true);
     console.log(`Sending action: ${action} for order ID: ${id}`);
-    sendCustomerActionSignal(orderIdToWorkflowId(id), action);
+    executeCustomerActionUpdate(orderIdToWorkflowId(id), action);
     refetchOrder();
     setActionLoading(false);
   };

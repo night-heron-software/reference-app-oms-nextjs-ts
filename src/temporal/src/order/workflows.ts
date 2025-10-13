@@ -9,6 +9,7 @@ import { ship } from '../shipment/workflows.js';
 import * as activities from './activities.js';
 import {
   customerActionSignal,
+  customerActionUpdate,
   FulfillInput,
   Fulfillment,
   fulfillmentIdToWorkflowId,
@@ -282,17 +283,19 @@ function reservationsFound(reserveItemsResult: ReserveItemsResult): boolean {
 }
 
 async function waitForCustomer(order: OrderContext): Promise<string> {
-  let signalReceived = false;
-  let signalValue = 'timedOut'; // Default value if no action is taken
+  let updateReceived = false;
+  let updateValue = 'timedOut'; // Default value if no action is taken
 
-  wf.setHandler(customerActionSignal, (value) => {
-    signalReceived = true;
-    signalValue = value;
+  wf.setHandler(customerActionUpdate, async (update: string): Promise<string> => {
+    updateReceived = true;
+    updateValue = update;
+    return updateValue;
   });
-  const conditionPromise = wf.condition(() => signalReceived);
+
+  const conditionPromise = wf.condition(() => updateReceived);
   const timeoutPromise = wf.sleep(10 * 60 * 1000); // Wait for 5 minutes for customer action
   await Promise.race([conditionPromise, timeoutPromise]);
-  return signalValue;
+  return updateValue;
 }
 
 export async function processPayment(fulfillment: Fulfillment): Promise<Payment | undefined> {

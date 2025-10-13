@@ -150,7 +150,7 @@ export function orderIdToWorkflowId(id: string): string {
   return 'Order:' + id;
 }
 
-export function orderWorkflowIdToId(id: string): string {
+export function workflowIdToOrderId(id: string): string {
   return id.replace(/^Order:/, '');
 }
 
@@ -159,4 +159,4 @@ export interface FulfillOutput {
   status: FulfillmentStatus;
 }
 export const getOrderStatus = wf.defineQuery<OrderQueryResult>('getOrderStatus');
-export const customerActionSignal = wf.defineSignal<[string]>('customerAction');
+export const customerActionUpdate = wf.defineUpdate<string, [string]>('customerActionUpdate');
