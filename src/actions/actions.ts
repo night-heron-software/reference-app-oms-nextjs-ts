@@ -6,7 +6,6 @@ import {
   OrderInput,
   OrderQueryResult,
   Shipment,
-  customerActionSignal,
   customerActionUpdate,
   getOrderStatus,
   orderIdToWorkflowId
@@ -18,7 +17,6 @@ import {
   shipmentIdToWorkflowId
 } from '@/temporal/src/shipment/definitions';
 
-//import { neon } from '@neondatabase/serverless';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { getTemporalClient } from './client';
@@ -112,9 +110,17 @@ export async function fetchOrderById(id: string): Promise<OrderQueryResult | und
 
   const handle = client.workflow.getHandle(workflowId);
   try {
-    const orderStatus = await handle.query(getOrderStatus);
-    console.log(`Fetched order: ${JSON.stringify(orderStatus, null, 2)}`);
-    return orderStatus;
+    for (let retry = 0; retry < 10; retry++) {
+      const orderStatus = await handle.query(getOrderStatus);
+      console.log(`Fetched order: ${JSON.stringify(orderStatus, null, 2)}`);
+
+      if (orderStatus.status !== 'uninitialized') {
+        return orderStatus;
+      }
+      console.warn(`Order status is uninitialized for ID ${id}, retrying...`);
+      await new Promise((resolve) => setTimeout(resolve, 1000)); // Wait 1 second before retrying
+    }
+    throw new Error(`Order status remained uninitialized after retries`);
   } catch (error) {
     console.warn(`Error fetching order by ID ${id}:`, error);
     return undefined;
@@ -162,26 +168,16 @@ export async function executeShipmentStatusUpdate(
 export async function executeCustomerActionUpdate(
   workflowId: string,
   action: Action
-): Promise<void> {
+): Promise<OrderQueryResult | null> {
   const client = await getTemporalClient();
   const handle = client.workflow.getHandle(workflowId);
 
   try {
     let result = await handle.executeUpdate(customerActionUpdate, { args: [action] });
     console.log(`Customer action signal result: ${JSON.stringify(result, null, 2)}`);
+    return result;
   } catch (error) {
     console.warn(`Error sending customer action signal for workflow ${workflowId}:`, error);
+    return null;
   }
 }
-
-/* export async function sendCustomerActionSignal(workflowId: string, action: Action): Promise<void> {
-  const client = await getTemporalClient();
-  const handle = client.workflow.getHandle(workflowId);
-
-  try {
-    await handle.signal(customerActionSignal, action);
-  } catch (error) {
-    console.warn(`Failed to send customer action signal`, error);
-  }
-}
- */

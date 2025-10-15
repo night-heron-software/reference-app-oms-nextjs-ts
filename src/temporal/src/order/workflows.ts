@@ -8,7 +8,6 @@ import * as shipment from '../shipment/definitions.js';
 import { ship } from '../shipment/workflows.js';
 import * as activities from './activities.js';
 import {
-  customerActionSignal,
   customerActionUpdate,
   FulfillInput,
   Fulfillment,
@@ -58,14 +57,14 @@ export async function order(input: OrderInput): Promise<OrderOutput> {
     customerId: input.customerId,
     items: buildOrderItems(input),
     receivedAt: Temporal.Now.plainDateTimeISO().toString(),
-    status: 'pending',
+    status: 'uninitialized',
     fulfillments: [],
     workflowId: wf.workflowInfo().workflowId,
     updatedAt: Temporal.Now.plainDateTimeISO().toString()
   };
 
   log.info(`Order: ${JSON.stringify(orderContext, null, 2)} created!`);
-
+  let statusInitialized = false;
   wf.setHandler(getOrderStatus, () => {
     log.info(`getOrderStatus called for order: ${orderContext.id}`);
     // OrderQueryResult is the same as OrderContext but the types might diverge in the future.
@@ -86,29 +85,12 @@ export async function order(input: OrderInput): Promise<OrderOutput> {
 
   orderContext.fulfillments = buildFulfillments(reserveItemsResult, orderContext);
 
-  while (customerActionRequired(orderContext)) {
+  if (customerActionRequired(orderContext)) {
     orderContext.status = 'customerActionRequired';
-
-    const customerAction = await waitForCustomer(orderContext);
-
-    log.info(`Customer action taken: ${customerAction}`);
-
-    if (customerAction === 'amend') {
-      cancelUnavailableFulfillments(orderContext);
-      log.info(`Amended orderContext: ${JSON.stringify(orderContext, null, 2)}`);
-    } else if (customerAction === 'cancel') {
-      cancelAllFulfillments(orderContext);
-      updateOrderStatus(orderContext, 'cancelled');
-      return orderContext;
-    } else if (customerAction === 'timedOut') {
-      updateOrderStatus(orderContext, 'timedOut');
-      cancelAllFulfillments(orderContext);
-      return orderContext;
-    } else {
-      log.error(`Unknown action taken by customer: ${customerAction}. Ignored`);
-      continue;
+    orderContext.status = await waitForCustomerAction(orderContext);
+    if (orderContext.status === 'timedOut' || orderContext.status === 'cancelled') {
+      return { status: orderContext.status };
     }
-    break;
   }
 
   await updateOrderStatus(orderContext, 'processing');
@@ -282,20 +264,44 @@ function reservationsFound(reserveItemsResult: ReserveItemsResult): boolean {
   return !!reserveItemsResult?.reservations?.length;
 }
 
-async function waitForCustomer(order: OrderContext): Promise<string> {
+async function waitForCustomerAction(orderContext: OrderContext): Promise<OrderStatus> {
   let updateReceived = false;
-  let updateValue = 'timedOut'; // Default value if no action is taken
 
-  wf.setHandler(customerActionUpdate, async (update: string): Promise<string> => {
-    updateReceived = true;
-    updateValue = update;
-    return updateValue;
-  });
+  wf.setHandler(
+    customerActionUpdate,
+    async (customerAction: string): Promise<OrderQueryResult | null> => {
+      log.info(`Customer action taken: ${customerAction}`);
+      if (customerAction === 'amend') {
+        cancelUnavailableFulfillments(orderContext);
+        updateOrderStatus(orderContext, 'processing');
+      } else if (customerAction === 'cancel') {
+        cancelAllFulfillments(orderContext);
+        updateOrderStatus(orderContext, 'cancelled');
+      } else {
+        log.error(`Unknown action taken by customer: ${customerAction}. Ignored`);
+        return null;
+      }
+      updateReceived = true;
+      orderContext.updatedAt = Temporal.Now.plainDateTimeISO().toString();
+
+      return orderContext as OrderQueryResult;
+    }
+  );
+
+  // Should only be active during this function call
+  // is there a way to unregister this after the first call?
+  // This should update the order context and return an OrderQueryResult
 
   const conditionPromise = wf.condition(() => updateReceived);
   const timeoutPromise = wf.sleep(10 * 60 * 1000); // Wait for 5 minutes for customer action
   await Promise.race([conditionPromise, timeoutPromise]);
-  return updateValue;
+
+  if (!updateReceived) {
+    updateOrderStatus(orderContext, 'timedOut');
+    cancelAllFulfillments(orderContext);
+    return 'timedOut';
+  }
+  return orderContext.status;
 }
 
 export async function processPayment(fulfillment: Fulfillment): Promise<Payment | undefined> {

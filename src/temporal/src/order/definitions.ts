@@ -12,6 +12,7 @@ import * as wf from '@temporalio/workflow';
 */
 
 export type OrderStatus =
+  | 'uninitialized'
   | 'pending'
   | 'processing'
   | 'customerActionRequired'
@@ -158,5 +159,9 @@ export interface FulfillOutput {
   id: string;
   status: FulfillmentStatus;
 }
+
 export const getOrderStatus = wf.defineQuery<OrderQueryResult>('getOrderStatus');
-export const customerActionUpdate = wf.defineUpdate<string, [string]>('customerActionUpdate');
+
+export const customerActionUpdate = wf.defineUpdate<OrderQueryResult | null, [string]>(
+  'customerActionUpdate'
+);

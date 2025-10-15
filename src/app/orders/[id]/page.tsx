@@ -1,10 +1,6 @@
 'use client';
 
-import {
-  executeCustomerActionUpdate,
-  fetchOrderById,
-  sendCustomerActionSignal
-} from '@/actions/actions'; // Adjust the import path as necessary
+import { executeCustomerActionUpdate, fetchOrderById } from '@/actions/actions'; // Adjust the import path as necessary
 import { orderIdToWorkflowId, type OrderQueryResult } from '@/temporal/src/order/definitions';
 import { use, useEffect, useMemo, useState } from 'react';
 
@@ -55,12 +51,17 @@ export default function OrderPage(props: OrderPageProps) {
     refetchOrder();
   }, []);
 
-  const sendAction = async (action: Action) => {
+  const executeAction = async (action: Action) => {
     setActionLoading(true);
     console.log(`Sending action: ${action} for order ID: ${id}`);
-    executeCustomerActionUpdate(orderIdToWorkflowId(id), action);
-    refetchOrder();
-    setActionLoading(false);
+    const result = await executeCustomerActionUpdate(orderIdToWorkflowId(id), action);
+    if (result) {
+      setOrder(result);
+      setActionLoading(false);
+    } else {
+      console.error(`Failed to send action: ${action} for order ID: ${id}`);
+      throw new Error('Failed to send action');
+    }
   };
 
   const actionRequired = useMemo(() => {
@@ -79,10 +80,10 @@ export default function OrderPage(props: OrderPageProps) {
     if (actionRequired) {
       return (
         <div className="flex items-center justify-end gap-2 mt-4">
-          <Button loading={actionLoading} onClick={() => sendAction('amend')}>
+          <Button loading={actionLoading} onClick={() => executeAction('amend')}>
             Amend
           </Button>
-          <Button loading={actionLoading} onClick={() => sendAction('cancel')}>
+          <Button loading={actionLoading} onClick={() => executeAction('cancel')}>
             Cancel
           </Button>
         </div>
