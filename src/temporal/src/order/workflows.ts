@@ -64,9 +64,8 @@ export async function order(input: OrderInput): Promise<OrderOutput> {
   };
 
   log.info(`Order: ${JSON.stringify(orderContext, null, 2)} created!`);
-  let statusInitialized = false;
+
   wf.setHandler(getOrderStatus, () => {
-    log.info(`getOrderStatus called for order: ${orderContext.id}`);
     // OrderQueryResult is the same as OrderContext but the types might diverge in the future.
     // If so, we map that here.
     return orderContext as OrderQueryResult;
@@ -91,9 +90,10 @@ export async function order(input: OrderInput): Promise<OrderOutput> {
     if (orderContext.status === 'timedOut' || orderContext.status === 'cancelled') {
       return { status: orderContext.status };
     }
+    await updateOrderStatus(orderContext, 'processing');
+  } else {
+    await updateOrderStatus(orderContext, 'processing');
   }
-
-  await updateOrderStatus(orderContext, 'processing');
 
   const fulfillmentMap = new Map(orderContext.fulfillments.map((f) => [f.id, f]));
 
@@ -210,8 +210,8 @@ async function runFulfillments(order: OrderContext) {
       shipment: fulfillment.shipment
     };
     log.info(`Starting fulfillment workflow for: ${fulfillment.id}`);
-
-    return wf.executeChild(fulfill, {
+    // Do these run in parallel?
+    return wf.startChild(fulfill, {
       args: [fulfillInput],
       taskQueue: 'orders',
       workflowId: fulfillmentIdToWorkflowId(fulfillment.id),
@@ -219,8 +219,9 @@ async function runFulfillments(order: OrderContext) {
       workflowTaskTimeout: '2m'
     });
   });
-
-  const fulfillmentResults = await Promise.all(fulfillmentPromises);
+  // Does this accomplish anything different than just using executeChild and awaiting the results?
+  const fulfillmentHandles = await Promise.all(fulfillmentPromises);
+  const fulfillmentResults = await Promise.all(fulfillmentHandles.map((handle) => handle.result()));
   const fulfillmentResultMap = new Map(fulfillmentResults.map((result) => [result.id, result]));
 
   order.fulfillments.forEach((fulfillment) => {

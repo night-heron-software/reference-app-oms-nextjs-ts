@@ -1,14 +1,14 @@
 'use client';
 
-import React, { use, useEffect, useRef, useState } from 'react';
+import { use, useEffect, useState } from 'react';
 
-import { fetchShipmentById, executeShipmentStatusUpdate } from '@/actions/actions';
-import { ShipmentStatus } from '@/temporal/src/shipment/definitions';
+import { executeShipmentStatusUpdate, fetchShipmentById } from '@/actions/actions';
 import Button from '@/components/Button';
 import Card from '@/components/Card';
 import Heading from '@/components/Heading';
 import ItemDetails, { ItemDetailsItem } from '@/components/ItemDetails';
 import ShipmentProgress from '@/components/ShipmentProgress';
+import { ShipmentStatus } from '@/temporal/src/shipment/definitions';
 import { OrderItem } from '@/types/order';
 
 export interface Shipment {
@@ -28,7 +28,10 @@ export default function ShipmentDetailPage(props: ShipmentDetailPageProps) {
   const [shipment, setShipment] = useState<ShipmentStatus | null>(null);
   const [pageLoading, setPageLoading] = useState(true);
   const refetchShipment = async () => {
-    setPageLoading(true);
+    // Don't set loading state if we already have shipment data so the UI doesn't flicker
+    if (!shipment) {
+      setPageLoading(true);
+    }
 
     try {
       const fetchedShipment = await fetchShipmentById(id);
@@ -42,17 +45,37 @@ export default function ShipmentDetailPage(props: ShipmentDetailPageProps) {
   };
 
   useEffect(() => {
-    refetchShipment();
+    const fetchShipment = async () => {
+      // Don't set loading state if we already have shipment data so the UI doesn't flicker
+      if (!shipment) {
+        setPageLoading(true);
+      }
+
+      try {
+        const fetchedShipment = await fetchShipmentById(id);
+        setShipment(fetchedShipment ?? null);
+      } catch (error) {
+        console.error('Error fetching shipment:', error);
+        setShipment(null);
+      } finally {
+        setPageLoading(false);
+      }
+    };
+    fetchShipment();
   }, []);
 
-  const handleDispatchShipment = async () => {
-    await executeShipmentStatusUpdate(shipment.id, shipment.workflowId, 'dispatched');
-    await refetchShipment();
+  const updateShipmentStatus = async (newStatus: string) => {
+    if (!shipment) return;
+    const status = await executeShipmentStatusUpdate(shipment.id, shipment.workflowId, newStatus);
+    setShipment({ ...shipment, status: status }); // Trigger re-render with updated status
   };
 
-  const handleDeliverShipment = async () => {
-    await executeShipmentStatusUpdate(shipment.id, shipment.workflowId, 'delivered');
-    await refetchShipment();
+  const dispatchShipment = async () => {
+    updateShipmentStatus('dispatched');
+  };
+
+  const deliverShipment = async () => {
+    updateShipmentStatus('delivered');
   };
 
   if (pageLoading) {
@@ -71,10 +94,10 @@ export default function ShipmentDetailPage(props: ShipmentDetailPageProps) {
     }
     const actionButtonsContent = (
       <>
-        <Button disabled={shipment?.status !== 'booked'} onClick={handleDispatchShipment}>
+        <Button disabled={shipment?.status !== 'booked'} onClick={dispatchShipment}>
           Dispatch
         </Button>
-        <Button disabled={shipment?.status !== 'dispatched'} onClick={handleDeliverShipment}>
+        <Button disabled={shipment?.status !== 'dispatched'} onClick={deliverShipment}>
           Deliver
         </Button>
       </>

@@ -17,7 +17,6 @@ import {
   shipmentIdToWorkflowId
 } from '@/temporal/src/shipment/definitions';
 
-import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { getTemporalClient } from './client';
 
@@ -90,12 +89,8 @@ export async function createOrder(formData: FormData): Promise<void> {
         console.error('Error starting workflow:', error);
         reject(error);
       });
-    // Use Next.js's redirect function to navigate to the order details page
   });
 
-  console.log('Workflow result:', JSON.stringify(result, null, 2));
-
-  revalidatePath('/orders');
   redirect(`/orders/${formOrder.id}`);
 }
 
@@ -153,7 +148,7 @@ export async function executeShipmentStatusUpdate(
   shipmentId: string,
   workflowId: string,
   status: string
-): Promise<void> {
+): Promise<string> {
   const client = await getTemporalClient();
   const handle = client.workflow.getHandle(workflowId);
   try {
@@ -161,9 +156,11 @@ export async function executeShipmentStatusUpdate(
       args: [{ status: status }]
     });
     console.log(`Shipment carrier status update result: ${JSON.stringify(result, null, 2)}`);
+    return result.status;
   } catch (error) {
     console.warn(`Error updating shipment carrier status for ${shipmentId}:`, error);
   }
+  return status;
 }
 export async function executeCustomerActionUpdate(
   workflowId: string,
@@ -174,7 +171,6 @@ export async function executeCustomerActionUpdate(
 
   try {
     let result = await handle.executeUpdate(customerActionUpdate, { args: [action] });
-    console.log(`Customer action signal result: ${JSON.stringify(result, null, 2)}`);
     return result;
   } catch (error) {
     console.warn(`Error sending customer action signal for workflow ${workflowId}:`, error);

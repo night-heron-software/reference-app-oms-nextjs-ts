@@ -4,14 +4,11 @@ import { executeCustomerActionUpdate, fetchOrderById } from '@/actions/actions';
 import { orderIdToWorkflowId, type OrderQueryResult } from '@/temporal/src/order/definitions';
 import { use, useEffect, useMemo, useState } from 'react';
 
-// Assuming components are converted to React and placed in a components directory
-// You might need to adjust these paths based on your project structure and path aliases
 import Button from '@/components/Button';
 import Card from '@/components/Card';
-import Fulfillment from '@/components/Fulfillment'; // Corrected spelling
+import Fulfillment from '@/components/Fulfillment';
 import Heading from '@/components/Heading';
 import StatusBadge from '@/components/StatusBadge';
-// FIXME: need to find the correct way to share types between nextjs and temporal
 
 import type { Action } from '@/types/order';
 
@@ -29,26 +26,32 @@ export default function OrderPage(props: OrderPageProps) {
 
   // Initial data fetch
   // break out refetch logic into a function
-  const refetchOrder = async () => {
-    if (id) {
-      setPageLoading(true);
-      try {
-        const fetchedOrder = await fetchOrderById(id);
-        if (!fetchedOrder) {
-          console.error('Order not found or failed to load');
-          setPageLoading(false);
-          return;
-        }
-        setOrder(fetchedOrder);
-      } catch (error) {
-        console.error('Error fetching order:', error);
-      } finally {
-        setPageLoading(false);
-      }
-    }
-  };
   useEffect(() => {
-    refetchOrder();
+    const fetchOrder = async () => {
+      if (id) {
+        if (!order) {
+          setPageLoading(true);
+        }
+        try {
+          for (let retry = 0; retry < 10; retry++) {
+            const fetchedOrder = await fetchOrderById(id);
+            if (!fetchedOrder || fetchedOrder.status === 'uninitialized') {
+              await new Promise((resolve) => setTimeout(resolve, 100));
+              continue;
+            } else {
+              setOrder(fetchedOrder);
+              break;
+            }
+          }
+        } catch (error) {
+          console.error('Error fetching order:', error);
+        } finally {
+          setPageLoading(false);
+        }
+      }
+    };
+
+    fetchOrder();
   }, []);
 
   const executeAction = async (action: Action) => {
@@ -64,9 +67,7 @@ export default function OrderPage(props: OrderPageProps) {
     }
   };
 
-  const actionRequired = useMemo(() => {
-    return order?.status === 'customerActionRequired';
-  }, [order]);
+  const actionRequired = order?.status && order.status === 'customerActionRequired';
 
   if (pageLoading) {
     return <Heading>Loading order details...</Heading>;
