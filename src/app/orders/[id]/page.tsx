@@ -2,7 +2,7 @@
 
 import { executeCustomerActionUpdate, fetchOrderById } from '@/actions/actions'; // Adjust the import path as necessary
 import { orderIdToWorkflowId, type OrderQueryResult } from '@/temporal/src/order/definitions';
-import { use, useEffect, useMemo, useState } from 'react';
+import { use, useEffect, useState } from 'react';
 
 import Button from '@/components/Button';
 import Card from '@/components/Card';
@@ -67,8 +67,6 @@ export default function OrderPage(props: OrderPageProps) {
     }
   };
 
-  const actionRequired = order?.status && order.status === 'customerActionRequired';
-
   if (pageLoading) {
     return <Heading>Loading order details...</Heading>;
   }
@@ -76,6 +74,7 @@ export default function OrderPage(props: OrderPageProps) {
   if (!order) {
     return <div className="p-4">Order not found or failed to load.</div>;
   }
+  const actionRequired = order.status === 'customerActionRequired';
 
   const renderActionButtons = () => {
     if (actionRequired) {
