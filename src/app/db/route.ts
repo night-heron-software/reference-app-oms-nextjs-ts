@@ -2,7 +2,7 @@
 import 'server-only';
 import { sql } from '@/temporal/src/db/client'; // Adjust the import path as necessary
 
-export async function setupTables() {
+async function setupTables() {
   let rows = [];
   rows = await sql`DROP TABLE IF EXISTS settings`;
   console.log(JSON.stringify(rows, null, 2));
