@@ -11,6 +11,7 @@ import Heading from '@/components/Heading';
 import StatusBadge from '@/components/StatusBadge';
 
 import type { Action } from '@/types/order';
+import { sleep } from '@temporalio/workflow';
 
 interface OrderPageProps {
   params: Promise<{ id: string }>;
